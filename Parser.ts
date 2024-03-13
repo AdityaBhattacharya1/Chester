@@ -8,34 +8,12 @@ import {
 	TT_RPAREN,
 	TT_MUL,
 	TT_DIV,
+	TT_POW,
 } from './Constants'
 import { LangError, InvalidSyntaxError } from './LangError'
+import { NumberNode, UnaryOperatorNode, BinaryOperatorNode } from './Nodes'
 import { Token } from './Token'
 
-class NumberNode {
-	token: Token
-	constructor(token: Token) {
-		this.token = token
-	}
-}
-class BinOpNode {
-	leftNode: any
-	operationToken: Token
-	rightNode: any
-	constructor(leftNode: any, operationToken: Token, rightNode: any) {
-		this.leftNode = leftNode
-		this.operationToken = operationToken
-		this.rightNode = rightNode
-	}
-}
-class UnaryOpNode {
-	operationToken: Token
-	node: any
-	constructor(operationToken: Token, node: any) {
-		this.operationToken = operationToken
-		this.node = node
-	}
-}
 class ResultParser {
 	error: LangError | null
 	node: any
@@ -90,6 +68,45 @@ export class Parser {
 		}
 		return res
 	}
+
+	atom() {
+		let result = new ResultParser()
+		let token = this.currentToken
+
+		if (token.type == TT_INT || token.type == TT_FLOAT) {
+			result.register(this.advance())
+			return result.success(new NumberNode(token))
+		} else if (token.type == TT_LPAREN) {
+			result.register(this.advance())
+			let expr = result.register(this.expr())
+			if (result.error) return result
+			if (this.currentToken.type == TT_RPAREN) {
+				result.register(this.advance())
+				return result.success(expr)
+			}
+		} else {
+			return result.failure(
+				new InvalidSyntaxError(
+					this.currentToken.posStart,
+					this.currentToken.posEnd,
+					"Expected ')'"
+				)
+			)
+		}
+
+		return result.failure(
+			new InvalidSyntaxError(
+				token.posStart,
+				token.posEnd,
+				"Expected int, float, '+', '-' or '('"
+			)
+		)
+	}
+
+	power() {
+		return this.binaryOperation(this.atom.bind(this), [TT_POW], this.factor)
+	}
+
 	factor() {
 		const res = new ResultParser()
 		const token = this.currentToken
@@ -99,7 +116,7 @@ export class Parser {
 			if (res.error) {
 				return res
 			}
-			return res.success(new UnaryOpNode(token, factor))
+			return res.success(new UnaryOperatorNode(token, factor))
 		} else if (token.type === TT_INT || token.type === TT_FLOAT) {
 			res.register(this.advance())
 			return res.success(new NumberNode(token))
@@ -134,23 +151,58 @@ export class Parser {
 		return this.binaryOperation(this.factor.bind(this), [TT_MUL, TT_DIV])
 	}
 	expr() {
-		return this.binaryOperation(this.term.bind(this), [TT_PLUS, TT_MINUS])
+		return this.binaryOperation(this.term.bind(this), [
+			TT_PLUS,
+			TT_MINUS,
+			TT_POW,
+		])
 	}
-	binaryOperation(func: () => any, ops: string[]) {
+	binaryOperation(
+		funcOne: () => any,
+		ops: string[],
+		funcTwo?: () => any | null
+	) {
+		if (funcTwo == null) funcTwo = funcOne
+
 		const res = new ResultParser()
-		let left = res.register(func())
+		let left = res.register(funcOne())
 		if (res.error) {
 			return res
 		}
 		while (ops.includes(this.currentToken.type)) {
 			const operationToken = this.currentToken
 			res.register(this.advance())
-			let right = res.register(func())
+			let right = res.register(funcTwo())
 			if (res.error) {
 				return res
 			}
-			left = new BinOpNode(left, operationToken, right)
+			left = new BinaryOperatorNode(left, operationToken, right)
 		}
 		return res.success(left)
+	}
+}
+
+export class RunTimeResult {
+	value: any
+	error: any
+
+	constructor() {
+		this.value = null
+		this.error = null
+	}
+
+	register(result: any) {
+		if (result.error) this.error = result.error
+		return result.value
+	}
+
+	success(value: any) {
+		this.value = value
+		return this
+	}
+
+	failure(error: any) {
+		this.error = error
+		return this
 	}
 }

@@ -34,3 +34,38 @@ export class InvalidSyntaxError extends LangError {
 		super(posStart, posEnd, 'Invalid Syntax', details)
 	}
 }
+
+export class RunTimeError extends LangError {
+	context: any
+	constructor(
+		posStart: Position,
+		posEnd: Position,
+		details: string,
+		context: any
+	) {
+		super(posStart, posEnd, 'Runtime Error', details)
+		this.context = context
+	}
+
+	asString(): string {
+		let result = this.generateStackTrace()
+		result += `${this.errorName}: ${this.details}`
+		return result
+	}
+
+	generateStackTrace() {
+		let result = ''
+		let pos = this.posStart
+		let context = this.context
+
+		while (context) {
+			result =
+				`at ${pos.func}, line ${(pos.line + 1).toString()}\nat ${
+					context.displayName
+				}` + result
+			pos = context.parentEntryPosition
+			context = context.parent
+		}
+		return `Error: Something went wrong\n${result}`
+	}
+}

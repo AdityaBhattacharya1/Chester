@@ -7,5 +7,6 @@ export const TT_DIV = 'DIV'
 export const TT_LPAREN = 'LPAREN'
 export const TT_RPAREN = 'RPAREN'
 export const TT_EOF = 'EOF'
+export const TT_POW = 'POW'
 
-export const DIGITS = '0123456789'
+export const DIGITS = '0123456789.'

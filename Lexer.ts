@@ -12,6 +12,7 @@ import {
 	TT_EOF,
 	TT_INT,
 	TT_FLOAT,
+	TT_POW,
 } from './Constants'
 
 export class Lexer {
@@ -49,6 +50,9 @@ export class Lexer {
 			} else if (this.currentChar === '/') {
 				tokens.push(new Token(TT_DIV, null, this.pos))
 				this.advance()
+			} else if (this.currentChar === '^') {
+				tokens.push(new Token(TT_POW, null, this.pos))
+				this.advance()
 			} else if (this.currentChar === '(') {
 				tokens.push(new Token(TT_LPAREN, null, this.pos))
 				this.advance()
@@ -72,10 +76,7 @@ export class Lexer {
 		let numStrRes = ''
 		let dotCount = 0
 		const posStart = this.pos.copy()
-		while (
-			this.currentChar !== null &&
-			(DIGITS + '.').includes(this.currentChar)
-		) {
+		while (this.currentChar !== null && DIGITS.includes(this.currentChar)) {
 			if (this.currentChar === '.') {
 				if (dotCount === 1) {
 					break
