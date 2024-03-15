@@ -1,5 +1,5 @@
 import { Context } from './Context'
-import { RunTimeError } from './LangError'
+import { RunTimeError } from './Errors'
 import { Position } from './Position'
 
 export class Number {
@@ -57,7 +57,7 @@ export class Number {
 	}
 	division(otherNum: any) {
 		if (otherNum instanceof Number) {
-			if (otherNum.value == 0)
+			if (otherNum.value === 0)
 				return [
 					null,
 					new RunTimeError(
@@ -83,5 +83,12 @@ export class Number {
 				),
 				null,
 			]
+	}
+
+	copy() {
+		const copy = new Number(this.value)
+		copy.setPosition(this.posStart, this.posEnd)
+		copy.setContext(this.context)
+		return copy
 	}
 }

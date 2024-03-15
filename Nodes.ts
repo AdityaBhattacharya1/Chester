@@ -39,3 +39,27 @@ export class UnaryOperatorNode {
 		this.posEnd = node.posEnd
 	}
 }
+
+export class VarAccessNode {
+	varNameToken: Token
+	posStart: Position
+	posEnd: Position
+	constructor(varNameToken: Token) {
+		this.varNameToken = varNameToken
+		this.posStart = this.varNameToken.posStart
+		this.posEnd = this.varNameToken.posEnd
+	}
+}
+
+export class VarAssignNode {
+	varNameToken: Token
+	valueNode: any
+	posStart: Position
+	posEnd: Position
+	constructor(varNameToken: Token, valueNode: any) {
+		this.varNameToken = varNameToken
+		this.valueNode = valueNode
+		this.posStart = this.varNameToken.posStart
+		this.posEnd = this.varNameToken.posEnd
+	}
+}

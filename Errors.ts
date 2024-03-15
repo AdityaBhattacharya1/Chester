@@ -60,7 +60,7 @@ export class RunTimeError extends LangError {
 
 		while (context) {
 			result =
-				`at ${pos.func}, line ${(pos.line + 1).toString()}\nat ${
+				`\nat ${pos.func}, line ${(pos.line + 1).toString()}\nat ${
 					context.displayName
 				}` + result
 			pos = context.parentEntryPosition

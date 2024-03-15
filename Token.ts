@@ -2,12 +2,12 @@ import { Position } from './Position'
 
 export class Token {
 	type: string
-	value: number | null
+	value: any | null
 	posStart: Position
 	posEnd: Position
 	constructor(
 		_type: string,
-		value: number | null = null,
+		value: any | null = null,
 		posStart: Position | null = null,
 		posEnd: Position | null = null
 	) {
@@ -21,5 +21,9 @@ export class Token {
 		if (posEnd) {
 			this.posEnd = posEnd
 		}
+	}
+
+	matches(_type: string, value: any | null) {
+		return this.type === _type && this.value === value
 	}
 }

@@ -1,6 +1,6 @@
 import { Token } from './Token'
 import { Position } from './Position'
-import { IllegalCharError } from './LangError'
+import { IllegalCharError } from './Errors'
 import {
 	DIGITS,
 	TT_PLUS,
@@ -13,6 +13,12 @@ import {
 	TT_INT,
 	TT_FLOAT,
 	TT_POW,
+	TT_EQ,
+	LETTERS,
+	ALPHANUM,
+	KEYWORDS,
+	TT_KEYWORD,
+	TT_IDENTIFIER,
 } from './Constants'
 
 export class Lexer {
@@ -31,13 +37,15 @@ export class Lexer {
 		this.pos.advance(this.currentChar)
 		this.currentChar = this.text[this.pos.idx] ?? null
 	}
-	make_tokens() {
+	makeTokens() {
 		const tokens: Token[] = []
 		while (this.currentChar !== null) {
 			if (this.currentChar === ' ' || this.currentChar === '\t') {
 				this.advance()
 			} else if (DIGITS.includes(this.currentChar)) {
-				tokens.push(this.make_number())
+				tokens.push(this.makeNumber())
+			} else if (LETTERS.includes(this.currentChar)) {
+				tokens.push(this.makeIdentifier())
 			} else if (this.currentChar === '+') {
 				tokens.push(new Token(TT_PLUS, null, this.pos))
 				this.advance()
@@ -52,6 +60,9 @@ export class Lexer {
 				this.advance()
 			} else if (this.currentChar === '^') {
 				tokens.push(new Token(TT_POW, null, this.pos))
+				this.advance()
+			} else if (this.currentChar === '=') {
+				tokens.push(new Token(TT_EQ, null, this.pos))
 				this.advance()
 			} else if (this.currentChar === '(') {
 				tokens.push(new Token(TT_LPAREN, null, this.pos))
@@ -72,7 +83,7 @@ export class Lexer {
 		tokens.push(new Token(TT_EOF, null, this.pos))
 		return [tokens, null]
 	}
-	make_number() {
+	makeNumber() {
 		let numStrRes = ''
 		let dotCount = 0
 		const posStart = this.pos.copy()
@@ -98,5 +109,21 @@ export class Lexer {
 				this.pos
 			)
 		}
+	}
+
+	makeIdentifier() {
+		let idStr = ''
+		let posStart = this.pos.copy()
+
+		while (
+			this.currentChar != null &&
+			`${ALPHANUM}_`.includes(this.currentChar)
+		) {
+			idStr += this.currentChar
+			this.advance()
+		}
+
+		let tokenType = KEYWORDS.includes(idStr) ? TT_KEYWORD : TT_IDENTIFIER
+		return new Token(tokenType, idStr, posStart, this.pos)
 	}
 }
