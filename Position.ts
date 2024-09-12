@@ -4,6 +4,7 @@ export class Position {
 	col: number
 	func: string
 	filetxt: string
+
 	constructor(
 		idx: number,
 		line: number,
@@ -17,6 +18,7 @@ export class Position {
 		this.func = func
 		this.filetxt = filetxt
 	}
+
 	advance(currentChar: string | null = null) {
 		this.idx += 1
 		this.col += 1
@@ -26,6 +28,7 @@ export class Position {
 		}
 		return this
 	}
+
 	copy() {
 		return new Position(
 			this.idx,

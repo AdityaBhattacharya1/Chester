@@ -5,6 +5,7 @@ export class Token {
 	value: any | null
 	posStart: Position
 	posEnd: Position
+
 	constructor(
 		_type: string,
 		value: any | null = null,
@@ -25,5 +26,12 @@ export class Token {
 
 	matches(_type: string, value: any | null) {
 		return this.type === _type && this.value === value
+	}
+
+	asString() {
+		if (this.value) {
+			return `${this.type}:${this.value}`
+		}
+		return this.type
 	}
 }
