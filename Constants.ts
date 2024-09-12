@@ -7,6 +7,8 @@ export const TT_MUL = 'MUL'
 export const TT_DIV = 'DIV'
 export const TT_LPAREN = 'LPAREN'
 export const TT_RPAREN = 'RPAREN'
+export const TT_LSQUARE = 'LSQUARE'
+export const TT_RSQUARE = 'RSQUARE'
 export const TT_EOF = 'EOF'
 export const TT_POW = 'POW'
 

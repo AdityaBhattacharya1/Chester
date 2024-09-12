@@ -35,6 +35,12 @@ export class InvalidSyntaxError extends LangError {
 	}
 }
 
+export class ExpectedCharError extends LangError {
+	constructor(posStart: Position, posEnd: Position, details: string) {
+		super(posStart, posEnd, 'Expected Character', details)
+	}
+}
+
 export class RunTimeError extends LangError {
 	context: any
 	constructor(
