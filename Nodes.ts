@@ -117,7 +117,7 @@ export class ForNode {
 	startValueNode: Node
 	endValueNode: Node
 	stepValueNode: Node
-	bodyNode: Node
+	bodyNode: any
 	shouldReturnNull: any
 
 	posStart: Position
@@ -128,10 +128,8 @@ export class ForNode {
 		startValueNode: Node,
 		endValueNode: Node,
 		stepValueNode: Node,
-		bodyNode: Node,
-		shouldReturnNull: any,
-		posStart: Position,
-		posEnd: Position
+		bodyNode: any,
+		shouldReturnNull: any
 	) {
 		this.varNameToken = varNameToken
 		this.startValueNode = startValueNode
@@ -140,8 +138,8 @@ export class ForNode {
 		this.bodyNode = bodyNode
 		this.shouldReturnNull = shouldReturnNull
 
-		this.posStart = posStart
-		this.posEnd = posEnd
+		this.posStart = this.varNameToken.posStart
+		this.posEnd = this.bodyNode.posEnd
 	}
 }
 
@@ -164,7 +162,7 @@ export class WhileNode {
 }
 
 export class FunctionDefinitionNode {
-	varNameToken: Token
+	varNameToken: Token | null
 	argNameTokens: Token[]
 	bodyNode: any
 	shouldAutoReturn: any
@@ -173,7 +171,7 @@ export class FunctionDefinitionNode {
 	posEnd: Position
 
 	constructor(
-		varNameToken: Token,
+		varNameToken: Token | null,
 		argNameTokens: Token[],
 		bodyNode: any,
 		shouldAutoReturn: any
@@ -202,12 +200,7 @@ export class CallNode {
 	posStart: Position
 	posEnd: Position
 
-	constructor(
-		nodeToCall: any,
-		argNodes: any[],
-		posStart: Position,
-		posEnd: Position
-	) {
+	constructor(nodeToCall: any, argNodes: any[]) {
 		this.nodeToCall = nodeToCall
 		this.argNodes = argNodes
 		this.posStart = this.nodeToCall.posStart
