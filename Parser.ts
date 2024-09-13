@@ -1036,24 +1036,61 @@ export class Parser {
 export class RunTimeResult {
 	value: any
 	error: any
+	functionReturnValue: any
+	loopShouldContinue: boolean
+	loopShouldBreak: boolean
 
 	constructor() {
-		this.value = null
-		this.error = null
+		this.reset()
 	}
 
-	register(result: any) {
-		if (result.error) this.error = result.error
+	reset() {
+		this.value = null
+		this.error = null
+		this.functionReturnValue = null
+		this.loopShouldContinue = false
+		this.loopShouldBreak = false
+	}
+
+	register(result: RunTimeResult) {
+		this.error = result.error
+		this.functionReturnValue = result.functionReturnValue
+		this.loopShouldContinue = result.loopShouldContinue
+		this.loopShouldBreak = result.loopShouldBreak
 		return result.value
 	}
 
 	success(value: any) {
+		this.reset()
 		this.value = value
 		return this
 	}
 
-	failure(error: any) {
-		this.error = error
+	successReturn(value: any) {
+		this.reset()
+		this.functionReturnValue = value
 		return this
+	}
+
+	successContinue() {
+		this.reset()
+		this.loopShouldContinue = true
+		return this
+	}
+
+	successBreak() {
+		this.reset()
+		this.loopShouldBreak = true
+		return this
+	}
+
+	failure(error: any) {
+		this.reset()
+		return (
+			this.error ||
+			this.functionReturnValue ||
+			this.loopShouldContinue ||
+			this.loopShouldBreak
+		)
 	}
 }
