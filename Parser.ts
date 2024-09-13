@@ -41,6 +41,7 @@ import {
 	ForNode,
 	WhileNode,
 	FunctionDefinitionNode,
+	CallNode,
 } from './Nodes'
 import { Token } from './Token'
 
@@ -130,7 +131,7 @@ export class Parser {
 			res.registerAdvance()
 			this.advance()
 
-			const expr = res.tryRegister(this.expr())
+			const expr = res.tryRegister(this.expression())
 			if (!expr) {
 				this.reverse(res.toReverseCount)
 			}
@@ -159,7 +160,7 @@ export class Parser {
 			)
 		}
 
-		const expr = res.register(this.expr())
+		const expr = res.register(this.expression())
 		if (res.error) {
 			return res.failure(
 				new InvalidSyntaxError(
@@ -214,13 +215,13 @@ export class Parser {
 	}
 
 	parse() {
-		const res = this.expr()
+		const res = this.statements()
 		if (!res.error && this.currentToken.type !== TT_EOF) {
 			return res.failure(
 				new InvalidSyntaxError(
 					this.currentToken.posStart,
 					this.currentToken.posEnd,
-					"Expected '+', '-', '*','^' or '/'"
+					'Token cannot appear after previous tokens'
 				)
 			)
 		}
@@ -249,7 +250,7 @@ export class Parser {
 			res.registerAdvance()
 			this.advance()
 		} else {
-			element_nodes.push(res.register(this.expr()))
+			element_nodes.push(res.register(this.expression()))
 			if (res.error) {
 				return res.failure(
 					new InvalidSyntaxError(
@@ -263,7 +264,7 @@ export class Parser {
 			while (this.currentToken.type === TT_COMMA) {
 				res.registerAdvance()
 				this.advance()
-				element_nodes.push(res.register(this.expr()))
+				element_nodes.push(res.register(this.expression()))
 				if (res.error) {
 					return res
 				}
@@ -369,7 +370,7 @@ export class Parser {
 		res.registerAdvance()
 		this.advance()
 
-		const condition = res.register(this.expr())
+		const condition = res.register(this.expression())
 		if (res.error) return res
 
 		if (!this.currentToken.matches(TT_KEYWORD, 'THEN')) {
@@ -462,7 +463,7 @@ export class Parser {
 		res.registerAdvance()
 		this.advance()
 
-		const start_value = res.register(this.expr())
+		const start_value = res.register(this.expression())
 		if (res.error) return res
 
 		if (!this.currentToken.matches(TT_KEYWORD, 'TO')) {
@@ -478,7 +479,7 @@ export class Parser {
 		res.registerAdvance()
 		this.advance()
 
-		const end_value = res.register(this.expr())
+		const end_value = res.register(this.expression())
 		if (res.error) return res
 
 		let step_value: any = null
@@ -486,7 +487,7 @@ export class Parser {
 			res.registerAdvance()
 			this.advance()
 
-			step_value = res.register(this.expr())
+			step_value = res.register(this.expression())
 			if (res.error) return res
 		}
 
@@ -574,7 +575,7 @@ export class Parser {
 		res.registerAdvance()
 		this.advance()
 
-		const condition = res.register(this.expr())
+		const condition = res.register(this.expression())
 		if (res.error) return res
 
 		if (!this.currentToken.matches(TT_KEYWORD, 'then')) {
@@ -622,12 +623,12 @@ export class Parser {
 	functionDefinition(): ResultParser {
 		const res = new ResultParser()
 
-		if (!this.currentToken.matches(TT_KEYWORD, 'FUN')) {
+		if (!this.currentToken.matches(TT_KEYWORD, 'func')) {
 			return res.failure(
 				new InvalidSyntaxError(
 					this.currentToken.posStart,
 					this.currentToken.posEnd,
-					"Expected 'FUN'"
+					"Expected 'func'"
 				)
 			)
 		}
@@ -723,7 +724,7 @@ export class Parser {
 			res.registerAdvance()
 			this.advance()
 
-			const body = res.register(this.expr())
+			const body = res.register(this.expression())
 			if (res.error) return res
 
 			return res.success(
@@ -752,12 +753,12 @@ export class Parser {
 		const body = res.register(this.statements())
 		if (res.error) return res
 
-		if (!this.currentToken.matches(TT_KEYWORD, 'END')) {
+		if (!this.currentToken.matches(TT_KEYWORD, 'end')) {
 			return res.failure(
 				new InvalidSyntaxError(
 					this.currentToken.posStart,
 					this.currentToken.posEnd,
-					"Expected 'END'"
+					"Expected 'end'"
 				)
 			)
 		}
@@ -768,6 +769,60 @@ export class Parser {
 		return res.success(
 			new FunctionDefinitionNode(varNameToken, argNameTokens, body, false)
 		)
+	}
+
+	call() {
+		const res = new ResultParser()
+		const atom = res.register(this.atom())
+		if (res.error) return res
+
+		if (this.currentToken.type === TT_LPAREN) {
+			res.registerAdvance()
+			this.advance()
+			const argNodes = []
+
+			// @ts-ignore
+			if (this.currentToken.type === TT_RPAREN) {
+				res.registerAdvance()
+				this.advance()
+			} else {
+				argNodes.push(res.register(this.expression()))
+				if (res.error) {
+					return res.failure(
+						new InvalidSyntaxError(
+							this.currentToken.posStart,
+							this.currentToken.posEnd,
+							"Expected ')', 'let', 'if', 'for', 'while', 'fun', int, float, identifier, '+', '-', '(', '[' or 'not'"
+						)
+					)
+				}
+
+				// @ts-ignore
+				while (this.currentToken.type === TT_COMMA) {
+					res.registerAdvance()
+					this.advance()
+
+					argNodes.push(res.register(this.expression()))
+					if (res.error) return res
+				}
+
+				// @ts-ignore
+				if (this.currentToken.type !== TT_RPAREN) {
+					return res.failure(
+						new InvalidSyntaxError(
+							this.currentToken.posStart,
+							this.currentToken.posEnd,
+							"Expected ',' or ')'"
+						)
+					)
+				}
+
+				res.registerAdvance()
+				this.advance()
+			}
+			return res.success(new CallNode(atom, argNodes))
+		}
+		return res.success(atom)
 	}
 
 	atom() {
@@ -789,7 +844,7 @@ export class Parser {
 		} else if (token.type === TT_LPAREN) {
 			result.registerAdvance()
 			this.advance()
-			let expr = result.register(this.expr())
+			let expr = result.register(this.expression())
 			if (result.error) return result
 			if (this.currentToken.type === TT_RPAREN) {
 				result.registerAdvance()
@@ -808,19 +863,35 @@ export class Parser {
 			let listExpression = result.register(this.listExpression())
 			if (result.error) return result
 			return result.success(listExpression)
+		} else if (token.matches(TT_KEYWORD, 'if')) {
+			const ifExp = result.register(this.ifExpression())
+			if (result.error) return result
+			return result.success(ifExp)
+		} else if (token.matches(TT_KEYWORD, 'for')) {
+			const forExp = result.register(this.forExpression())
+			if (result.error) return result
+			return result.success(forExp)
+		} else if (token.matches(TT_KEYWORD, 'while')) {
+			const whileExp = result.register(this.whileExpression())
+			if (result.error) return result
+			return result.success(whileExp)
+		} else if (token.matches(TT_KEYWORD, 'func')) {
+			const funcDef = result.register(this.functionDefinition())
+			if (result.error) return result
+			return result.success(funcDef)
 		}
 
 		return result.failure(
 			new InvalidSyntaxError(
 				token.posStart,
 				token.posEnd,
-				"Expected int, float, '+', '-' or '('"
+				"Expected int, float, identifier, '+', '-', '(', '[', if', 'for', 'while', 'fun'"
 			)
 		)
 	}
 
 	power() {
-		return this.binaryOperation(this.atom.bind(this), [TT_POW], this.factor)
+		return this.binaryOperation(this.call.bind(this), [TT_POW], this.factor)
 	}
 
 	factor() {
@@ -879,7 +950,7 @@ export class Parser {
 		return this.binaryOperation(this.term.bind(this), [TT_PLUS, TT_MINUS])
 	}
 
-	expr() {
+	expression() {
 		let result = new ResultParser()
 		if (this.currentToken.matches(TT_KEYWORD, 'let')) {
 			result.registerAdvance()
@@ -909,16 +980,15 @@ export class Parser {
 			}
 			result.registerAdvance()
 			this.advance()
-			let expr = result.register(this.expr())
+			let expr = result.register(this.expression())
 			if (result.error) return result
 			return result.success(new VarAssignNode(varName, expr))
 		}
 
 		let node = result.register(
 			this.binaryOperation(this.complicatedExpression.bind(this), [
-				TT_PLUS,
-				TT_MINUS,
-				TT_POW,
+				[TT_KEYWORD, 'and'],
+				[TT_KEYWORD, 'or'],
 			])
 		)
 
@@ -927,7 +997,7 @@ export class Parser {
 				new InvalidSyntaxError(
 					this.currentToken.posStart,
 					this.currentToken.posEnd,
-					"Expected 'let', int, float, identifier, '+', '-' or '('"
+					"Expected 'let', 'if', 'for', 'while', 'fun', int, float, identifier, '+', '-', '(', '[' or 'not'"
 				)
 			)
 
@@ -936,7 +1006,7 @@ export class Parser {
 
 	binaryOperation(
 		funcOne: () => any,
-		ops: string[],
+		ops: string[] | any,
 		funcTwo?: () => any | null
 	) {
 		if (funcTwo == null) funcTwo = funcOne
@@ -946,7 +1016,10 @@ export class Parser {
 		if (res.error) {
 			return res
 		}
-		while (ops.includes(this.currentToken.type)) {
+		while (
+			ops.includes(this.currentToken.type) ||
+			ops.includes([this.currentToken.type, this.currentToken.value])
+		) {
 			const operationToken = this.currentToken
 			res.registerAdvance()
 			this.advance()
