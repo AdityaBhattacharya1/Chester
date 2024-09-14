@@ -1,13 +1,13 @@
 import { Position } from './Position'
 
 export class LangError {
-	posStart: Position
-	posEnd: Position
+	posStart: Position | null
+	posEnd: Position | null
 	errorName: string
 	details: string
 	constructor(
-		posStart: Position,
-		posEnd: Position,
+		posStart: Position | null,
+		posEnd: Position | null,
 		errorName: string,
 		details: string
 	) {
@@ -19,7 +19,9 @@ export class LangError {
 
 	asString() {
 		let result = `${this.errorName}: ${this.details}\n`
-		result += `File ${this.posStart.func}, line ${this.posStart.line + 1}`
+		result += `File ${this.posStart?.func}, line ${
+			this.posStart && this.posStart.line + 1
+		}`
 		return result
 	}
 }
@@ -44,8 +46,8 @@ export class ExpectedCharError extends LangError {
 export class RunTimeError extends LangError {
 	context: any
 	constructor(
-		posStart: Position,
-		posEnd: Position,
+		posStart: Position | null,
+		posEnd: Position | null,
 		details: string,
 		context: any
 	) {
@@ -66,9 +68,9 @@ export class RunTimeError extends LangError {
 
 		while (context) {
 			result =
-				`\nat ${pos.func}, line ${(pos.line + 1).toString()}\nat ${
-					context.displayName
-				}` + result
+				`\nat ${pos && pos.func}, line ${(
+					(pos as Position).line + 1
+				).toString()}\nat ${context.displayName}` + result
 			pos = context.parentEntryPosition
 			context = context.parent
 		}
