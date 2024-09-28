@@ -5,7 +5,5 @@ while (true) {
 	let textInput = prompt('REPL > ')
 	let [result, error] = run('<stdin>', textInput)
 
-	error
-		? console.log(error.asString())
-		: console.log(result, result.constructor.name)
+	error ? console.log(error.asString()) : console.log(result.asString())
 }

@@ -198,7 +198,6 @@ export class Interpreter {
 		}
 
 		if (node.elseCase) {
-			console.log('else case', node.elseCase)
 			const [expr, shouldReturnNull] = node.elseCase
 			const exprValue = res.register(this.visit(expr, context))
 			if (res.shouldReturn()) return res
@@ -336,7 +335,8 @@ export class Interpreter {
 		valueToCall = valueToCall.copy().setPos(node.posStart, node.posEnd)
 
 		for (const argNode of node.argNodes) {
-			args.push(res.register(this.visit(argNode, context)))
+			const result = res.register(this.visit(argNode, context))
+			args.push(result)
 			if (res.shouldReturn()) return res
 		}
 

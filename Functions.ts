@@ -55,13 +55,10 @@ class BaseFunction extends Value {
 	}
 
 	populateArgs(argNames: string[], args: Value[], execCtx: Context): void {
-		console.log('inside populateArgs, arguments:', args)
-		console.log('inside populateArgs, arguments:', argNames)
 		for (let i = 0; i < args.length; i++) {
 			const argName = argNames[i]
 			const argValue = args[i]
 			argValue.setContext(execCtx)
-			console.log('arg name', argName)
 			execCtx.symbolTable?.set(argName, argValue)
 		}
 	}
@@ -158,9 +155,6 @@ export class BuiltInFunction extends BaseFunction {
 
 		const methodName = `execute${this.name}`
 		const method = (this as any)[methodName] || this.noVisitMethod
-
-		console.log('argnames of bif', BuiltInFunction.argNames)
-		console.log('this.name', this.name)
 
 		res.register(
 			this.checkAndPopulateArgs(
@@ -328,7 +322,7 @@ export class BuiltInFunction extends BaseFunction {
 	}
 	public static executePopArgNames: string[] = ['list', 'index']
 
-	public executeExtend(execCtx: Context): RunTimeResult {
+	public executeConcat(execCtx: Context): RunTimeResult {
 		const listA = execCtx.symbolTable?.get('listA')
 		const listB = execCtx.symbolTable?.get('listB')
 
@@ -357,7 +351,7 @@ export class BuiltInFunction extends BaseFunction {
 		listA.elements.push(...listB.elements)
 		return new RunTimeResult().success(NumberValue.null)
 	}
-	public static executeExtendArgNames: string[] = ['listA', 'listB']
+	public static executeConcatArgNames: string[] = ['listA', 'listB']
 
 	public executeLen(execCtx: Context): RunTimeResult {
 		const list = execCtx.symbolTable?.get('list')
@@ -442,17 +436,20 @@ BuiltInFunction.length = new BuiltInFunction('len')
 BuiltInFunction.run = new BuiltInFunction('run')
 
 BuiltInFunction.argNames['Print'] = BuiltInFunction.executePrintArgNames
-BuiltInFunction.argNames['print_ret'] = BuiltInFunction.executePrintRetArgNames
-BuiltInFunction.argNames['input'] = BuiltInFunction.executeInputArgNames
-BuiltInFunction.argNames['input_int'] = BuiltInFunction.executeInputIntArgNames
-BuiltInFunction.argNames['clear'] = BuiltInFunction.executeClearArgNames
-BuiltInFunction.argNames['is_number'] = BuiltInFunction.executeIsNumberArgNames
-BuiltInFunction.argNames['is_string'] = BuiltInFunction.executeIsStringArgNames
-BuiltInFunction.argNames['is_list'] = BuiltInFunction.executeIsListArgNames
-BuiltInFunction.argNames['is_function'] =
+BuiltInFunction.argNames['PrintReturn'] =
+	BuiltInFunction.executePrintRetArgNames
+BuiltInFunction.argNames['Input'] = BuiltInFunction.executeInputArgNames
+BuiltInFunction.argNames['InputInt'] = BuiltInFunction.executeInputIntArgNames
+BuiltInFunction.argNames['Clear'] = BuiltInFunction.executeClearArgNames
+BuiltInFunction.argNames['NumberCheck'] =
+	BuiltInFunction.executeIsNumberArgNames
+BuiltInFunction.argNames['StringCheck'] =
+	BuiltInFunction.executeIsStringArgNames
+BuiltInFunction.argNames['ListCheck'] = BuiltInFunction.executeIsListArgNames
+BuiltInFunction.argNames['FunctionCheck'] =
 	BuiltInFunction.executeIsFunctionArgNames
-BuiltInFunction.argNames['append'] = BuiltInFunction.executeAppendArgNames
+BuiltInFunction.argNames['Append'] = BuiltInFunction.executeAppendArgNames
 BuiltInFunction.argNames['pop'] = BuiltInFunction.executePopArgNames
-BuiltInFunction.argNames['extend'] = BuiltInFunction.executeExtendArgNames
-BuiltInFunction.argNames['len'] = BuiltInFunction.executeLenArgNames
-BuiltInFunction.argNames['run'] = BuiltInFunction.executeRunArgNames
+BuiltInFunction.argNames['Concat'] = BuiltInFunction.executeConcatArgNames
+BuiltInFunction.argNames['Length'] = BuiltInFunction.executeLenArgNames
+BuiltInFunction.argNames['Run'] = BuiltInFunction.executeRunArgNames
