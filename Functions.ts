@@ -55,10 +55,13 @@ class BaseFunction extends Value {
 	}
 
 	populateArgs(argNames: string[], args: Value[], execCtx: Context): void {
+		console.log('inside populateArgs, arguments:', args)
+		console.log('inside populateArgs, arguments:', argNames)
 		for (let i = 0; i < args.length; i++) {
 			const argName = argNames[i]
 			const argValue = args[i]
 			argValue.setContext(execCtx)
+			console.log('arg name', argName)
 			execCtx.symbolTable?.set(argName, argValue)
 		}
 	}
@@ -128,301 +131,6 @@ export class FunctionValue extends BaseFunction {
 	}
 }
 
-// export class BuiltInFunction extends BaseFunction {
-// 	static print = new BuiltInFunction('Print')
-// 	static printReturn = new BuiltInFunction('PrintReturn')
-// 	static input = new BuiltInFunction('Input')
-// 	static inputInt = new BuiltInFunction('InputInt')
-// 	static clear = new BuiltInFunction('Clear')
-// 	static isNumber = new BuiltInFunction('NumberCheck')
-// 	static isString = new BuiltInFunction('StringCheck')
-// 	static isList = new BuiltInFunction('ListCheck')
-// 	static isFunction = new BuiltInFunction('FunctionCheck')
-// 	static append = new BuiltInFunction('Append')
-// 	static pop = new BuiltInFunction('Pop')
-// 	static concat = new BuiltInFunction('Concat')
-// 	static length = new BuiltInFunction('Length')
-// 	static run = new BuiltInFunction('Run')
-
-// 	static argNames: { [key: string]: string[] } = {
-// 		executePrint: ['value'],
-// 		executePrintRet: ['value'],
-// 		executeInput: [],
-// 		executeInputInt: [],
-// 		executeClear: [],
-// 		executeIsNumber: ['value'],
-// 		executeIsString: ['value'],
-// 		executeIsList: ['value'],
-// 		executeIsFunction: ['value'],
-// 		executeAppend: ['list', 'value'],
-// 		executePop: ['list', 'index'],
-// 		executeConcat: ['listOne', 'listTwo'],
-// 		executeLength: ['list'],
-// 		executeRun: ['fn'],
-// 	}
-
-// 	constructor(name: string) {
-// 		super(name)
-// 	}
-
-// 	execute(args: Value[]): RunTimeResult {
-// 		const res = new RunTimeResult()
-// 		const execCtx = this.generateNewContext()
-
-// 		const methodName = `execute${this.name}`
-// 		const method = (this as any)[methodName] || this.noVisitMethod
-
-// 		res.register(this.checkAndPopulateArgs(method.argNames, args, execCtx))
-// 		if (res.shouldReturn()) return res
-
-// 		const returnValue = res.register(method.call(this, execCtx))
-// 		if (res.shouldReturn()) return res
-
-// 		return res.success(returnValue)
-// 	}
-
-// 	noVisitMethod(node?: any, context?: any): never {
-// 		throw new Error(`No execute${this.name} method defined`)
-// 	}
-
-// 	copy(): BuiltInFunction {
-// 		const copy = new BuiltInFunction(this.name)
-// 		copy.setContext(this.context)
-// 		copy.setPos(this.posStart, this.posEnd)
-// 		return copy
-// 	}
-
-// 	toString(): string {
-// 		return `<builtInFunction ${this.name}>`
-// 	}
-
-// 	executePrint(execCtx: Context): RunTimeResult {
-// 		console.log(execCtx.symbolTable??.get('value').toString())
-// 		return new RunTimeResult().success(NumberValue.null)
-// 	}
-
-// 	executePrintReturn(execCtx: Context): RunTimeResult {
-// 		return new RunTimeResult().success(
-// 			new StringValue(execCtx.symbolTable??.get('value').toString())
-// 		)
-// 	}
-
-// 	executeInput(): RunTimeResult {
-// 		const text = prompt('Input: ')
-// 		return new RunTimeResult().success(new StringValue(text || ''))
-// 	}
-
-// 	executeInputInt(execCtx: Context): RunTimeResult {
-// 		let number: number
-
-// 		while (true) {
-// 			const text = prompt('Input an integer: ')
-
-// 			try {
-// 				number = parseInt(text, 10)
-// 				if (isNaN(number)) {
-// 					throw new Error()
-// 				}
-// 				break
-// 			} catch (error) {
-// 				console.log(`'${text}' must be an integer. Try again!`)
-// 			}
-// 		}
-
-// 		return new RunTimeResult().success(new NumberValue(number))
-// 	}
-
-// 	executeClear(): RunTimeResult {
-// 		console.clear()
-// 		return new RunTimeResult().success(NumberValue.null)
-// 	}
-
-// 	executeNumberCheck(execCtx: Context): RunTimeResult {
-// 		const isNumber =
-// 			execCtx.symbolTable??.get('value') instanceof NumberValue
-// 		return new RunTimeResult().success(
-// 			isNumber ? NumberValue.true : NumberValue.false
-// 		)
-// 	}
-
-// 	executeStringCheck(execCtx: Context): RunTimeResult {
-// 		const isString =
-// 			execCtx.symbolTable??.get('value') instanceof StringValue
-// 		return new RunTimeResult().success(
-// 			isString ? NumberValue.true : NumberValue.false
-// 		)
-// 	}
-
-// 	executeListCheck(execCtx: Context): RunTimeResult {
-// 		const isList = execCtx.symbolTable??.get('value') instanceof ListValue
-// 		return new RunTimeResult().success(
-// 			isList ? NumberValue.true : NumberValue.false
-// 		)
-// 	}
-
-// 	executeFunctionCheck(execCtx: Context): RunTimeResult {
-// 		const isFunction =
-// 			execCtx.symbolTable??.get('value') instanceof BaseFunction
-// 		return new RunTimeResult().success(
-// 			isFunction ? NumberValue.true : NumberValue.false
-// 		)
-// 	}
-
-// 	executeAppend(execCtx: Context): RunTimeResult {
-// 		const list = execCtx.symbolTable??.get('list')
-// 		const value = execCtx.symbolTable??.get('value')
-
-// 		if (!(list instanceof ListValue)) {
-// 			return new RunTimeResult().failure(
-// 				new RunTimeError(
-// 					this.posStart,
-// 					this.posEnd,
-// 					'First argument must be list',
-// 					execCtx
-// 				)
-// 			)
-// 		}
-
-// 		list.elements.push(value)
-// 		return new RunTimeResult().success(NumberValue.null)
-// 	}
-
-// 	executePop(execCtx: Context): RunTimeResult {
-// 		const list = execCtx.symbolTable??.get('list')
-// 		const index = execCtx.symbolTable??.get('index')
-
-// 		if (!(list instanceof ListValue)) {
-// 			return new RunTimeResult().failure(
-// 				new RunTimeError(
-// 					this.posStart,
-// 					this.posEnd,
-// 					'First argument must be list',
-// 					execCtx
-// 				)
-// 			)
-// 		}
-
-// 		if (!(index instanceof NumberValue)) {
-// 			return new RunTimeResult().failure(
-// 				new RunTimeError(
-// 					this.posStart,
-// 					this.posEnd,
-// 					'Second argument must be number',
-// 					execCtx
-// 				)
-// 			)
-// 		}
-
-// 		try {
-// 			const element = list.elements.splice(index.value, 1)[0]
-// 			return new RunTimeResult().success(element)
-// 		} catch {
-// 			return new RunTimeResult().failure(
-// 				new RunTimeError(
-// 					this.posStart,
-// 					this.posEnd,
-// 					'Element at this index could not be removed from list because index is out of bounds',
-// 					execCtx
-// 				)
-// 			)
-// 		}
-// 	}
-
-// 	executeConcat(execCtx: Context): RunTimeResult {
-// 		const listA = execCtx.symbolTable??.get('listA')
-// 		const listB = execCtx.symbolTable??.get('listB')
-
-// 		if (!(listA instanceof ListValue)) {
-// 			return new RunTimeResult().failure(
-// 				new RunTimeError(
-// 					this.posStart,
-// 					this.posEnd,
-// 					'First argument must be list',
-// 					execCtx
-// 				)
-// 			)
-// 		}
-
-// 		if (!(listB instanceof ListValue)) {
-// 			return new RunTimeResult().failure(
-// 				new RunTimeError(
-// 					this.posStart,
-// 					this.posEnd,
-// 					'Second argument must be list',
-// 					execCtx
-// 				)
-// 			)
-// 		}
-
-// 		listA.elements.concat(listB.elements)
-// 		return new RunTimeResult().success(NumberValue.null)
-// 	}
-
-// 	executeLength(execCtx: Context): RunTimeResult {
-// 		const list = execCtx.symbolTable??.get('list')
-
-// 		if (!(list instanceof ListValue)) {
-// 			return new RunTimeResult().failure(
-// 				new RunTimeError(
-// 					this.posStart,
-// 					this.posEnd,
-// 					'Argument must be list',
-// 					execCtx
-// 				)
-// 			)
-// 		}
-
-// 		return new RunTimeResult().success(
-// 			new NumberValue(list.elements.length)
-// 		)
-// 	}
-
-// 	executeRun(execCtx: Context): RunTimeResult {
-// 		const fn = execCtx.symbolTable??.get('fn')
-
-// 		if (!(fn instanceof StringValue)) {
-// 			return new RunTimeResult().failure(
-// 				new RunTimeError(
-// 					this.posStart,
-// 					this.posEnd,
-// 					'Argument must be string',
-// 					execCtx
-// 				)
-// 			)
-// 		}
-
-// 		const fileName = fn.value
-// 		let script: string
-
-// 		try {
-// 			script = fs.readFileSync(fileName, 'utf-8')
-// 		} catch (e) {
-// 			return new RunTimeResult().failure(
-// 				new RunTimeError(
-// 					this.posStart,
-// 					this.posEnd,
-// 					`Failed to load script "${fileName}"\n${e}`,
-// 					execCtx
-// 				)
-// 			)
-// 		}
-
-// 		const [, error] = run(fileName, script)
-// 		if (error) {
-// 			return new RunTimeResult().failure(
-// 				new RunTimeError(
-// 					this.posStart,
-// 					this.posEnd,
-// 					`Failed to finish executing script "${fileName}"\n${error.asString()}`,
-// 					execCtx
-// 				)
-// 			)
-// 		}
-
-// 		return new RunTimeResult().success(NumberValue.null)
-// 	}
-// }
-
 export class BuiltInFunction extends BaseFunction {
 	static argNames: { [key: string]: string[] } = {}
 	static print = new BuiltInFunction('print')
@@ -450,6 +158,9 @@ export class BuiltInFunction extends BaseFunction {
 
 		const methodName = `execute${this.name}`
 		const method = (this as any)[methodName] || this.noVisitMethod
+
+		console.log('argnames of bif', BuiltInFunction.argNames)
+		console.log('this.name', this.name)
 
 		res.register(
 			this.checkAndPopulateArgs(
@@ -481,12 +192,7 @@ export class BuiltInFunction extends BaseFunction {
 	}
 
 	public executePrint(execCtx: Context): RunTimeResult {
-		console.log(arguments[1][0].value)
-		console.log(
-			execCtx.symbolTable?.get(arguments[1][0].value),
-			'\n\n========='
-		)
-		console.log('symt', execCtx.symbolTable, '\n\n=========')
+		console.log(execCtx.symbolTable?.get('value').asString())
 		return new RunTimeResult().success(NumberValue.null)
 	}
 	public static executePrintArgNames: string[] = ['value']
@@ -735,7 +441,7 @@ BuiltInFunction.concat = new BuiltInFunction('extend')
 BuiltInFunction.length = new BuiltInFunction('len')
 BuiltInFunction.run = new BuiltInFunction('run')
 
-BuiltInFunction.argNames['print'] = BuiltInFunction.executePrintArgNames
+BuiltInFunction.argNames['Print'] = BuiltInFunction.executePrintArgNames
 BuiltInFunction.argNames['print_ret'] = BuiltInFunction.executePrintRetArgNames
 BuiltInFunction.argNames['input'] = BuiltInFunction.executeInputArgNames
 BuiltInFunction.argNames['input_int'] = BuiltInFunction.executeInputIntArgNames
