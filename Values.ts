@@ -1,5 +1,6 @@
 import { Context } from './Context'
 import { RunTimeError } from './Errors'
+import { FunctionValue } from './Functions'
 import { RunTimeResult } from './Parser'
 import { Position } from './Position'
 
@@ -128,17 +129,19 @@ export class Value {
 		return [null, this.illegalOperation(other)]
 	}
 
-	notBy():
+	notBy(
+		other: Value
+	):
 		| (RunTimeError | null)[]
 		| (NumberValue | StringValue | ListValue | null)[] {
-		return [null, this.illegalOperation()]
+		return [null, this.illegalOperation(other)]
 	}
 
-	execute() {
+	execute(args: any) {
 		return new RunTimeResult().failure(this.illegalOperation())
 	}
 
-	copy(): Value {
+	copy(): Value | FunctionValue {
 		throw new Error('No copy method defined')
 	}
 
@@ -161,6 +164,10 @@ export class Value {
 
 export class NumberValue extends Value {
 	value: number
+	static null = new NumberValue(0)
+	static false = new NumberValue(0)
+	static true = new NumberValue(1)
+	static MATH_PI = new NumberValue(Math.PI)
 
 	constructor(value: number) {
 		super()
@@ -247,7 +254,7 @@ export class NumberValue extends Value {
 				null,
 			]
 		} else {
-			return [null, new Value().illegalOperation(other)]
+			return [null, this.illegalOperation(other)]
 		}
 	}
 
@@ -260,7 +267,7 @@ export class NumberValue extends Value {
 				null,
 			]
 		} else {
-			return [null, new Value().illegalOperation(other)]
+			return [null, this.illegalOperation(other)]
 		}
 	}
 
@@ -273,7 +280,7 @@ export class NumberValue extends Value {
 				null,
 			]
 		} else {
-			return [null, new Value().illegalOperation(other)]
+			return [null, this.illegalOperation(other)]
 		}
 	}
 
@@ -286,7 +293,7 @@ export class NumberValue extends Value {
 				null,
 			]
 		} else {
-			return [null, new Value().illegalOperation(other)]
+			return [null, this.illegalOperation(other)]
 		}
 	}
 
@@ -299,7 +306,7 @@ export class NumberValue extends Value {
 				null,
 			]
 		} else {
-			return [null, new Value().illegalOperation(other)]
+			return [null, this.illegalOperation(other)]
 		}
 	}
 
@@ -312,7 +319,7 @@ export class NumberValue extends Value {
 				null,
 			]
 		} else {
-			return [null, new Value().illegalOperation(other)]
+			return [null, this.illegalOperation(other)]
 		}
 	}
 
@@ -325,7 +332,7 @@ export class NumberValue extends Value {
 				null,
 			]
 		} else {
-			return [null, new Value().illegalOperation(other)]
+			return [null, this.illegalOperation(other)]
 		}
 	}
 
@@ -338,7 +345,7 @@ export class NumberValue extends Value {
 				null,
 			]
 		} else {
-			return [null, new Value().illegalOperation(other)]
+			return [null, this.illegalOperation(other)]
 		}
 	}
 
@@ -382,7 +389,7 @@ export class StringValue extends Value {
 				null,
 			]
 		} else {
-			return [null, new Value().illegalOperation(other)]
+			return [null, this.illegalOperation(other)]
 		}
 	}
 
@@ -395,7 +402,7 @@ export class StringValue extends Value {
 				null,
 			]
 		} else {
-			return [null, new Value().illegalOperation(other)]
+			return [null, this.illegalOperation(other)]
 		}
 	}
 
@@ -433,7 +440,7 @@ export class ListValue extends Value {
 		if (other instanceof NumberValue) {
 			const newList = this.copy()
 			try {
-				newList.elements.push(other.value)
+				newList.elements.splice(other.value, 1)
 				return [newList, null]
 			} catch (error) {
 				return [
@@ -447,7 +454,7 @@ export class ListValue extends Value {
 				]
 			}
 		} else {
-			return [null, new Value().illegalOperation(other)]
+			return [null, this.illegalOperation(other)]
 		}
 	}
 
@@ -457,7 +464,7 @@ export class ListValue extends Value {
 			newList.elements.concat(other.elements)
 			return [newList, null]
 		} else {
-			return [null, new Value().illegalOperation(other)]
+			return [null, this.illegalOperation(other)]
 		}
 	}
 
@@ -477,7 +484,7 @@ export class ListValue extends Value {
 				]
 			}
 		} else {
-			return [null, new Value().illegalOperation(other)]
+			return [null, this.illegalOperation(other)]
 		}
 	}
 
@@ -489,6 +496,6 @@ export class ListValue extends Value {
 	}
 
 	asString() {
-		return `[${this.elements.map((x: any) => String(x)).join(', ')}]`
+		return `[${this.elements.map((x: any) => x.asString()).join(', ')}]`
 	}
 }

@@ -19,7 +19,7 @@ export class LangError {
 
 	asString() {
 		let result = `${this.errorName}: ${this.details}\n`
-		result += `File ${this.posStart?.func}, line ${
+		result += `File ${this.posStart?.fileName}, line ${
 			this.posStart && this.posStart.line + 1
 		}`
 		return result
@@ -55,7 +55,7 @@ export class RunTimeError extends LangError {
 		this.context = context
 	}
 
-	asString(): string {
+	asString() {
 		let result = this.generateStackTrace()
 		result += `${this.errorName}: ${this.details}`
 		return result
@@ -68,7 +68,7 @@ export class RunTimeError extends LangError {
 
 		while (context) {
 			result =
-				`\nat ${pos && pos.func}, line ${(
+				`\nat ${pos && pos.fileName}, line ${(
 					(pos as Position).line + 1
 				).toString()}\nat ${context.displayName}` + result
 			pos = context.parentEntryPosition

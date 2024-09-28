@@ -1,7 +1,7 @@
 export class SymbolTable {
 	symbols: any
 	parent: SymbolTable | null
-	constructor() {
+	constructor(parent?: SymbolTable | null) {
 		this.symbols = {}
 		this.parent = null
 	}

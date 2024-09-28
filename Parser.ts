@@ -88,7 +88,7 @@ class ResultParser {
 	}
 
 	failure(error: LangError) {
-		if (!this.error || this.advanceCount === 0) {
+		if (!this.error || this.lastRegisteredAdvanceCount === 0) {
 			this.error = error
 		}
 		return this
@@ -112,7 +112,7 @@ export class Parser {
 	}
 
 	advance() {
-		this.tokenIdx += 1
+		this.tokenIdx++
 		this.updateCurrToken()
 		return this.currentToken
 	}
@@ -191,7 +191,7 @@ export class Parser {
 		let moreStatements = true
 		while (true) {
 			let newlineCount = 0
-			while (this.currentToken.type == TT_NEWLINE) {
+			while (this.currentToken.type === TT_NEWLINE) {
 				res.registerAdvance()
 				this.advance()
 				newlineCount++
@@ -230,7 +230,7 @@ export class Parser {
 
 	listExpression() {
 		const res = new ResultParser()
-		const element_nodes: any[] = []
+		const elemNodes: any[] = []
 		const posStart = this.currentToken.posStart.copy()
 
 		if (this.currentToken.type !== TT_LSQUARE) {
@@ -250,7 +250,7 @@ export class Parser {
 			res.registerAdvance()
 			this.advance()
 		} else {
-			element_nodes.push(res.register(this.expression()))
+			elemNodes.push(res.register(this.expression()))
 			if (res.error) {
 				return res.failure(
 					new InvalidSyntaxError(
@@ -264,7 +264,7 @@ export class Parser {
 			while (this.currentToken.type === TT_COMMA) {
 				res.registerAdvance()
 				this.advance()
-				element_nodes.push(res.register(this.expression()))
+				elemNodes.push(res.register(this.expression()))
 				if (res.error) {
 					return res
 				}
@@ -285,11 +285,7 @@ export class Parser {
 		}
 
 		return res.success(
-			new ListNode(
-				element_nodes,
-				posStart,
-				this.currentToken.posEnd.copy()
-			)
+			new ListNode(elemNodes, posStart, this.currentToken.posEnd.copy())
 		)
 	}
 
@@ -300,23 +296,23 @@ export class Parser {
 	ifExpressionBorC() {
 		const res = new ResultParser()
 		let cases: any[] = []
-		let else_case: any = null
+		let elseCase: any = null
 
 		if (this.currentToken.matches(TT_KEYWORD, 'elif')) {
 			const all_cases = res.register(this.ifExpressionB())
 			if (res.error) return res
-			;[cases, else_case] = all_cases
+			;[cases, elseCase] = all_cases
 		} else {
-			else_case = res.register(this.ifExpressionC())
+			elseCase = res.register(this.ifExpressionC())
 			if (res.error) return res
 		}
 
-		return res.success([cases, else_case])
+		return res.success([cases, elseCase])
 	}
 
 	ifExpressionC() {
 		const res = new ResultParser()
-		let else_case: any = null
+		let elseCase: any = null
 
 		if (this.currentToken.matches(TT_KEYWORD, 'else')) {
 			res.registerAdvance()
@@ -328,7 +324,7 @@ export class Parser {
 
 				const statements = res.register(this.statements())
 				if (res.error) return res
-				else_case = [statements, true]
+				elseCase = [statements, true]
 
 				if (this.currentToken.matches(TT_KEYWORD, 'end')) {
 					res.registerAdvance()
@@ -338,24 +334,24 @@ export class Parser {
 						new InvalidSyntaxError(
 							this.currentToken.posStart,
 							this.currentToken.posEnd,
-							"Expected 'END'"
+							"Expected 'end'"
 						)
 					)
 				}
 			} else {
 				const expr = res.register(this.statement())
 				if (res.error) return res
-				else_case = [expr, false]
+				elseCase = [expr, false]
 			}
 		}
 
-		return res.success(else_case)
+		return res.success(elseCase)
 	}
 
 	ifExpressionCases(caseKeyword: string) {
 		const res = new ResultParser()
 		let cases: any[] = []
-		let else_case: any = null
+		let elseCase: any = null
 
 		if (!this.currentToken.matches(TT_KEYWORD, caseKeyword)) {
 			return res.failure(
@@ -373,12 +369,12 @@ export class Parser {
 		const condition = res.register(this.expression())
 		if (res.error) return res
 
-		if (!this.currentToken.matches(TT_KEYWORD, 'THEN')) {
+		if (!this.currentToken.matches(TT_KEYWORD, 'then')) {
 			return res.failure(
 				new InvalidSyntaxError(
 					this.currentToken.posStart,
 					this.currentToken.posEnd,
-					"Expected 'THEN'"
+					"Expected 'then'"
 				)
 			)
 		}
@@ -394,29 +390,29 @@ export class Parser {
 			if (res.error) return res
 			cases.push([condition, statements, true])
 
-			if (this.currentToken.matches(TT_KEYWORD, 'END')) {
+			if (this.currentToken.matches(TT_KEYWORD, 'end')) {
 				res.registerAdvance()
 				this.advance()
 			} else {
-				const all_cases = res.register(this.ifExpressionBorC())
+				const allCases = res.register(this.ifExpressionBorC())
 				if (res.error) return res
-				const [new_cases, new_else_case] = all_cases
-				cases = cases.concat(new_cases)
-				else_case = new_else_case
+				const [newCases, newElseCase] = allCases
+				cases = cases.concat(newCases)
+				elseCase = newElseCase
 			}
 		} else {
 			const expr = res.register(this.statement())
 			if (res.error) return res
 			cases.push([condition, expr, false])
 
-			const all_cases = res.register(this.ifExpressionBorC())
+			const allCases = res.register(this.ifExpressionBorC())
 			if (res.error) return res
-			const [new_cases, new_else_case] = all_cases
-			cases = cases.concat(new_cases)
-			else_case = new_else_case
+			const [newCases, newElseCase] = allCases
+			cases = cases.concat(newCases)
+			elseCase = newElseCase
 		}
 
-		return res.success([cases, else_case])
+		return res.success([cases, elseCase])
 	}
 
 	forExpression() {
@@ -445,7 +441,7 @@ export class Parser {
 			)
 		}
 
-		const var_name = this.currentToken
+		const varName = this.currentToken
 		res.registerAdvance()
 		this.advance()
 
@@ -463,15 +459,15 @@ export class Parser {
 		res.registerAdvance()
 		this.advance()
 
-		const start_value = res.register(this.expression())
+		const startValue = res.register(this.expression())
 		if (res.error) return res
 
-		if (!this.currentToken.matches(TT_KEYWORD, 'TO')) {
+		if (!this.currentToken.matches(TT_KEYWORD, 'to')) {
 			return res.failure(
 				new InvalidSyntaxError(
 					this.currentToken.posStart,
 					this.currentToken.posEnd,
-					"Expected 'TO'"
+					"Expected 'to'"
 				)
 			)
 		}
@@ -479,15 +475,15 @@ export class Parser {
 		res.registerAdvance()
 		this.advance()
 
-		const end_value = res.register(this.expression())
+		const endVal = res.register(this.expression())
 		if (res.error) return res
 
-		let step_value: any = null
+		let stepVal: any = null
 		if (this.currentToken.matches(TT_KEYWORD, 'step')) {
 			res.registerAdvance()
 			this.advance()
 
-			step_value = res.register(this.expression())
+			stepVal = res.register(this.expression())
 			if (res.error) return res
 		}
 
@@ -516,7 +512,7 @@ export class Parser {
 					new InvalidSyntaxError(
 						this.currentToken.posStart,
 						this.currentToken.posEnd,
-						"Expected 'END'"
+						"Expected 'end'"
 					)
 				)
 			}
@@ -525,14 +521,7 @@ export class Parser {
 			this.advance()
 
 			return res.success(
-				new ForNode(
-					var_name,
-					start_value,
-					end_value,
-					step_value,
-					body,
-					true
-				)
+				new ForNode(varName, startValue, endVal, stepVal, body, true)
 			)
 		}
 
@@ -540,14 +529,7 @@ export class Parser {
 		if (res.error) return res
 
 		return res.success(
-			new ForNode(
-				var_name,
-				start_value,
-				end_value,
-				step_value,
-				body,
-				false
-			)
+			new ForNode(varName, startValue, endVal, stepVal, body, false)
 		)
 	}
 
@@ -620,7 +602,7 @@ export class Parser {
 		return res.success(new WhileNode(condition, body, false))
 	}
 
-	functionDefinition(): ResultParser {
+	functionDefinition() {
 		const res = new ResultParser()
 
 		if (!this.currentToken.matches(TT_KEYWORD, 'func')) {
@@ -742,7 +724,7 @@ export class Parser {
 				new InvalidSyntaxError(
 					this.currentToken.posStart,
 					this.currentToken.posEnd,
-					"Expected '->' or NEWLINE"
+					"Expected '->' or newline"
 				)
 			)
 		}
@@ -914,6 +896,7 @@ export class Parser {
 
 	complicatedExpression() {
 		const res = new ResultParser()
+
 		if (this.currentToken.matches(TT_KEYWORD, 'not')) {
 			const operationToken = this.currentToken
 			res.registerAdvance()
@@ -952,6 +935,7 @@ export class Parser {
 
 	expression() {
 		let result = new ResultParser()
+
 		if (this.currentToken.matches(TT_KEYWORD, 'let')) {
 			result.registerAdvance()
 			this.advance()
@@ -965,9 +949,11 @@ export class Parser {
 					)
 				)
 			}
+
 			let varName = this.currentToken
 			result.registerAdvance()
 			this.advance()
+
 			// @ts-ignore
 			if (this.currentToken.type !== TT_EQ) {
 				return result.failure(
@@ -1084,7 +1070,7 @@ export class RunTimeResult {
 		return this
 	}
 
-	failure(error: any) {
+	shouldReturn() {
 		this.reset()
 		return (
 			this.error ||
@@ -1092,5 +1078,11 @@ export class RunTimeResult {
 			this.loopShouldContinue ||
 			this.loopShouldBreak
 		)
+	}
+
+	failure(error: any) {
+		this.reset()
+		this.error = error
+		return this
 	}
 }

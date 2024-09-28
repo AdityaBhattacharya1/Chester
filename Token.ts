@@ -20,7 +20,7 @@ export class Token {
 			this.posEnd.advance()
 		}
 		if (posEnd) {
-			this.posEnd = posEnd
+			this.posEnd = posEnd.copy()
 		}
 	}
 
@@ -32,6 +32,6 @@ export class Token {
 		if (this.value) {
 			return `${this.type}:${this.value}`
 		}
-		return this.type
+		return `${this.type}`
 	}
 }

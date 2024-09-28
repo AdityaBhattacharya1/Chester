@@ -2,28 +2,28 @@ export class Position {
 	idx: number
 	line: number
 	col: number
-	func: string
-	filetxt: string
+	fileName: string
+	fileTxt: string
 
 	constructor(
 		idx: number,
 		line: number,
 		col: number,
-		func: string,
-		filetxt: string
+		fileName: string,
+		fileTxt: string
 	) {
 		this.idx = idx
 		this.line = line
 		this.col = col
-		this.func = func
-		this.filetxt = filetxt
+		this.fileName = fileName
+		this.fileTxt = fileTxt
 	}
 
 	advance(currentChar: string | null = null) {
-		this.idx += 1
-		this.col += 1
+		this.idx++
+		this.col++
 		if (currentChar === '\n') {
-			this.line += 1
+			this.line++
 			this.col = 0
 		}
 		return this
@@ -34,8 +34,8 @@ export class Position {
 			this.idx,
 			this.line,
 			this.col,
-			this.func,
-			this.filetxt
+			this.fileName,
+			this.fileTxt
 		)
 	}
 }

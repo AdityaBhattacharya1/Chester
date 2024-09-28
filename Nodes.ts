@@ -1,3 +1,4 @@
+import { Node } from './Interpreter'
 import { Position } from './Position'
 import { Token } from './Token'
 
@@ -33,11 +34,11 @@ export class StringNode {
 }
 
 export class ListNode {
-	elementNodes: any[]
+	elementNodes: Node[]
 	posStart: Position
 	posEnd: Position
 
-	constructor(elementNodes: any[], posStart: Position, posEnd: Position) {
+	constructor(elementNodes: Node[], posStart: Position, posEnd: Position) {
 		this.elementNodes = elementNodes
 		this.posStart = posStart
 		this.posEnd = posEnd
@@ -45,12 +46,12 @@ export class ListNode {
 }
 
 export class BinaryOperatorNode {
-	leftNode: any
+	leftNode: Node
 	operationToken: Token
-	rightNode: any
+	rightNode: Node
 	posStart: Position
 	posEnd: Position
-	constructor(leftNode: any, operationToken: Token, rightNode: any) {
+	constructor(leftNode: Node, operationToken: Token, rightNode: Node) {
 		this.leftNode = leftNode
 		this.operationToken = operationToken
 		this.rightNode = rightNode
@@ -58,18 +59,27 @@ export class BinaryOperatorNode {
 		this.posStart = this.leftNode.posStart
 		this.posEnd = this.rightNode.posEnd
 	}
+
+	asString() {
+		return `(${this.leftNode}, ${this.operationToken}, ${this.rightNode})`
+	}
 }
+
 export class UnaryOperatorNode {
 	operationToken: Token
-	node: any
+	node: Node
 	posStart: Position
 	posEnd: Position
-	constructor(operationToken: Token, node: any) {
+	constructor(operationToken: Token, node: Node) {
 		this.operationToken = operationToken
 		this.node = node
 
 		this.posStart = this.operationToken.posStart
 		this.posEnd = node.posEnd
+	}
+
+	asString() {
+		return `(${this.operationToken}, ${this.node})`
 	}
 }
 
@@ -86,10 +96,10 @@ export class VarAccessNode {
 
 export class VarAssignNode {
 	varNameToken: Token
-	valueNode: any
+	valueNode: Node
 	posStart: Position
 	posEnd: Position
-	constructor(varNameToken: Token, valueNode: any) {
+	constructor(varNameToken: Token, valueNode: Node) {
 		this.varNameToken = varNameToken
 		this.valueNode = valueNode
 		this.posStart = this.varNameToken.posStart
@@ -117,7 +127,7 @@ export class ForNode {
 	startValueNode: Node
 	endValueNode: Node
 	stepValueNode: Node
-	bodyNode: any
+	bodyNode: Node
 	shouldReturnNull: any
 
 	posStart: Position
@@ -128,7 +138,7 @@ export class ForNode {
 		startValueNode: Node,
 		endValueNode: Node,
 		stepValueNode: Node,
-		bodyNode: any,
+		bodyNode: Node,
 		shouldReturnNull: any
 	) {
 		this.varNameToken = varNameToken
@@ -144,14 +154,18 @@ export class ForNode {
 }
 
 export class WhileNode {
-	conditionNode: any
-	bodyNode: any
-	shouldReturnNull: any
+	conditionNode: Node
+	bodyNode: Node
+	shouldReturnNull: boolean
 
 	posStart: Position
 	posEnd: Position
 
-	constructor(conditionNode: any, bodyNode: any, shouldReturnNull: any) {
+	constructor(
+		conditionNode: Node,
+		bodyNode: Node,
+		shouldReturnNull: boolean
+	) {
 		this.conditionNode = conditionNode
 		this.bodyNode = bodyNode
 		this.shouldReturnNull = shouldReturnNull
@@ -164,7 +178,7 @@ export class WhileNode {
 export class FunctionDefinitionNode {
 	varNameToken: Token | null
 	argNameTokens: Token[]
-	bodyNode: any
+	bodyNode: Node
 	shouldAutoReturn: any
 
 	posStart: Position
@@ -173,7 +187,7 @@ export class FunctionDefinitionNode {
 	constructor(
 		varNameToken: Token | null,
 		argNameTokens: Token[],
-		bodyNode: any,
+		bodyNode: Node,
 		shouldAutoReturn: any
 	) {
 		this.varNameToken = varNameToken
@@ -195,12 +209,12 @@ export class FunctionDefinitionNode {
 }
 
 export class CallNode {
-	nodeToCall: any
-	argNodes: any[]
+	nodeToCall: Node
+	argNodes: Node[]
 	posStart: Position
 	posEnd: Position
 
-	constructor(nodeToCall: any, argNodes: any[]) {
+	constructor(nodeToCall: Node, argNodes: Node[]) {
 		this.nodeToCall = nodeToCall
 		this.argNodes = argNodes
 		this.posStart = this.nodeToCall.posStart
@@ -214,11 +228,11 @@ export class CallNode {
 }
 
 export class ReturnNode {
-	nodeToReturn: any
+	nodeToReturn: Node
 	posStart: Position
 	posEnd: Position
 
-	constructor(nodeToReturn: any, posStart: Position, posEnd: Position) {
+	constructor(nodeToReturn: Node, posStart: Position, posEnd: Position) {
 		this.nodeToReturn = nodeToReturn
 		this.posStart = posStart
 		this.posEnd = posEnd

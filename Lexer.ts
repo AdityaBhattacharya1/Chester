@@ -34,14 +34,14 @@ import {
 } from './Constants'
 
 export class Lexer {
-	func: string
+	fileName: string
 	text: string
 	pos: Position
 	currentChar: string | null
-	constructor(func: string, text: string) {
-		this.func = func
+	constructor(fileName: string, text: string) {
+		this.fileName = fileName
 		this.text = text
-		this.pos = new Position(-1, 0, -1, func, text)
+		this.pos = new Position(-1, 0, -1, fileName, text)
 		this.currentChar = null
 		this.advance()
 	}
@@ -52,116 +52,68 @@ export class Lexer {
 	}
 	makeTokens() {
 		const tokens: Token[] = []
+
 		while (this.currentChar !== null) {
-			switch (this.currentChar) {
-				case ' ':
-				case '\t':
-					this.advance()
-					break
-
-				case '#':
-					this.makeComment()
-					break
-
-				case ';':
-				case '\n':
-					tokens.push(new Token(TT_NEWLINE, null, this.pos))
-					break
-
-				case '+':
-					tokens.push(new Token(TT_PLUS, null, this.pos))
-					this.advance()
-					break
-
-				case '-':
-					tokens.push(new Token(TT_MINUS, null, this.pos))
-					this.advance()
-					break
-
-				case '*':
-					tokens.push(new Token(TT_MUL, null, this.pos))
-					this.advance()
-					break
-
-				case '/':
-					tokens.push(new Token(TT_DIV, null, this.pos))
-					this.advance()
-					break
-
-				case '^':
-					tokens.push(new Token(TT_POW, null, this.pos))
-					this.advance()
-					break
-
-				case '=':
-					tokens.push(this.makeEquals())
-					this.advance()
-					break
-
-				case '<':
-					tokens.push(this.makeLesserThan())
-					this.advance()
-					break
-
-				case '>':
-					tokens.push(this.makeGreaterThan())
-					this.advance()
-					break
-
-				case ',':
-					tokens.push(new Token(TT_COMMA, null, this.pos))
-					this.advance()
-					break
-
-				case '(':
-					tokens.push(new Token(TT_LPAREN, null, this.pos))
-					this.advance()
-					break
-
-				case ')':
-					tokens.push(new Token(TT_RPAREN, null, this.pos))
-					this.advance()
-					break
-
-				case '[':
-					tokens.push(new Token(TT_LSQUARE, null, this.pos))
-					this.advance()
-					break
-
-				case ']':
-					tokens.push(new Token(TT_RSQUARE, null, this.pos))
-					this.advance()
-					break
-
-				case '!':
-					const [token, error] = this.makeNotEqual()
-					if (error) {
-						return [[], error]
-					}
-					tokens.push(token as Token)
-					break
-
-				default:
-					if (DIGITS.includes(this.currentChar)) {
-						tokens.push(this.makeNumber())
-					} else if (LETTERS.includes(this.currentChar)) {
-						tokens.push(this.makeIdentifier())
-					} else if (this.currentChar === '"') {
-						tokens.push(this.makeString())
-					} else {
-						const posStart = this.pos.copy()
-						const char = this.currentChar
-						this.advance()
-						return [
-							[],
-							new IllegalCharError(
-								posStart,
-								this.pos,
-								"'" + char + "'"
-							),
-						]
-					}
-					break
+			if (this.currentChar === ' ' || this.currentChar === '\t') {
+				this.advance()
+			} else if (this.currentChar === '#') {
+				this.makeComment()
+			} else if (this.currentChar === ';' || this.currentChar === '\n') {
+				tokens.push(new Token(TT_NEWLINE, null, this.pos))
+				this.advance()
+			} else if (DIGITS.includes(this.currentChar)) {
+				tokens.push(this.makeNumber())
+			} else if (LETTERS.includes(this.currentChar)) {
+				tokens.push(this.makeIdentifier())
+			} else if (this.currentChar === '"') {
+				tokens.push(this.makeString())
+			} else if (this.currentChar === '+') {
+				tokens.push(new Token(TT_PLUS, null, this.pos))
+				this.advance()
+			} else if (this.currentChar === '-') {
+				tokens.push(this.makeMinusOrArrow())
+			} else if (this.currentChar === '*') {
+				tokens.push(new Token(TT_MUL, null, this.pos))
+				this.advance()
+			} else if (this.currentChar === '/') {
+				tokens.push(new Token(TT_DIV, null, this.pos))
+				this.advance()
+			} else if (this.currentChar === '^') {
+				tokens.push(new Token(TT_POW, null, this.pos))
+				this.advance()
+			} else if (this.currentChar === '(') {
+				tokens.push(new Token(TT_LPAREN, null, this.pos))
+				this.advance()
+			} else if (this.currentChar === ')') {
+				tokens.push(new Token(TT_RPAREN, null, this.pos))
+				this.advance()
+			} else if (this.currentChar === '[') {
+				tokens.push(new Token(TT_LSQUARE, null, this.pos))
+				this.advance()
+			} else if (this.currentChar === ']') {
+				tokens.push(new Token(TT_RSQUARE, null, this.pos))
+				this.advance()
+			} else if (this.currentChar === '!') {
+				const [token, error] = this.makeNotEqual()
+				if (error) return [[], error]
+				tokens.push(token as Token)
+			} else if (this.currentChar === '=') {
+				tokens.push(this.makeEquals())
+			} else if (this.currentChar === '<') {
+				tokens.push(this.makeLesserThan())
+			} else if (this.currentChar === '>') {
+				tokens.push(this.makeGreaterThan())
+			} else if (this.currentChar === ',') {
+				tokens.push(new Token(TT_COMMA, null, this.pos))
+				this.advance()
+			} else {
+				const posStart = this.pos.copy()
+				const char = this.currentChar
+				this.advance()
+				return [
+					[],
+					new IllegalCharError(posStart, this.pos, `'${char}'`),
+				]
 			}
 		}
 		tokens.push(new Token(TT_EOF, null, this.pos))
@@ -171,16 +123,19 @@ export class Lexer {
 		let numStrRes = ''
 		let dotCount = 0
 		const posStart = this.pos.copy()
-		while (this.currentChar !== null && DIGITS.includes(this.currentChar)) {
+		while (
+			this.currentChar !== null &&
+			(DIGITS + '.').includes(this.currentChar)
+		) {
 			if (this.currentChar === '.') {
 				if (dotCount === 1) {
 					break
 				}
-				dotCount += 1
-				numStrRes += '.'
-			} else {
-				numStrRes += this.currentChar
+				dotCount++
+				// numStrRes += '.'
 			}
+			numStrRes += this.currentChar
+
 			this.advance()
 		}
 		if (dotCount === 0) {
@@ -233,7 +188,7 @@ export class Lexer {
 		let posStart = this.pos.copy()
 
 		while (
-			this.currentChar != null &&
+			this.currentChar !== null &&
 			`${ALPHANUM}_`.includes(this.currentChar)
 		) {
 			idStr += this.currentChar

@@ -47,7 +47,6 @@ export const KEYWORDS = [
 	'break',
 ]
 
-export const DIGITS = '0123456789.'
-export const LETTERS =
-	'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('')
+export const DIGITS = '0123456789'
+export const LETTERS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 export const ALPHANUM = LETTERS + DIGITS
