@@ -397,6 +397,17 @@ export class BuiltInFunction extends BaseFunction {
 		}
 
 		const fileName = fn.value
+		// check if file extension is .ct
+		if (!fileName.endsWith('.ct')) {
+			return new RunTimeResult().failure(
+				new RunTimeError(
+					this.posStart,
+					this.posEnd,
+					'File name must end with .ct',
+					execCtx
+				)
+			)
+		}
 		let script: string
 
 		try {
