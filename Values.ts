@@ -368,7 +368,7 @@ export class NumberValue extends Value {
 	}
 
 	asString(): string {
-		return `${this.value}`
+		return String(this.value)
 	}
 }
 
@@ -418,7 +418,7 @@ export class StringValue extends Value {
 	}
 
 	asString() {
-		return `${this.value}`
+		return this.value
 	}
 }
 
@@ -496,6 +496,6 @@ export class ListValue extends Value {
 	}
 
 	asString() {
-		return `[${this.elements.map((x: any) => x.asString()).join(', ')}]`
+		return `[${this.elements.map((el) => el.asString()).join(', ')}]`
 	}
 }

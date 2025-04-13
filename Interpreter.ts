@@ -215,9 +215,29 @@ export class Interpreter {
 			this.visit(node.startValueNode, context)
 		)
 		if (res.shouldReturn()) return res
+		if (!startValue) {
+			return res.failure(
+				new RunTimeError(
+					node.posStart,
+					node.posEnd,
+					`Start value in 'for' loop is not defined`,
+					context
+				)
+			)
+		}
 
 		const endValue = res.register(this.visit(node.endValueNode, context))
 		if (res.shouldReturn()) return res
+		if (!endValue) {
+			return res.failure(
+				new RunTimeError(
+					node.posStart,
+					node.posEnd,
+					`End value in 'for' loop is not defined`,
+					context
+				)
+			)
+		}
 
 		let stepValue: NumberValue
 		if (node.stepValueNode) {
@@ -225,6 +245,16 @@ export class Interpreter {
 				this.visit(node.stepValueNode, context)
 			) as NumberValue
 			if (res.shouldReturn()) return res
+			if (!stepValue) {
+				return res.failure(
+					new RunTimeError(
+						node.posStart,
+						node.posEnd,
+						`Step value in 'for' loop is not defined`,
+						context
+					)
+				)
+			}
 		} else {
 			stepValue = new NumberValue(1)
 		}
@@ -332,6 +362,18 @@ export class Interpreter {
 		const args: Value[] = []
 		let valueToCall = res.register(this.visit(node.nodeToCall, context))
 		if (res.shouldReturn()) return res
+
+		if (!valueToCall) {
+			return res.failure(
+				new RunTimeError(
+					node.posStart,
+					node.posEnd,
+					`Cannot call '${node.nodeToCall}' because it is not defined or not callable`,
+					context
+				)
+			)
+		}
+
 		valueToCall = valueToCall.copy().setPos(node.posStart, node.posEnd)
 
 		for (const argNode of node.argNodes) {
@@ -340,8 +382,27 @@ export class Interpreter {
 			if (res.shouldReturn()) return res
 		}
 
-		const returnValue = res.register(valueToCall.execute(args))
+		let returnValue = res.register(valueToCall.execute(args))
 		if (res.shouldReturn()) return res
+
+		if (!(returnValue instanceof Value)) {
+			// Wrap raw values in appropriate Value objects
+			if (typeof returnValue === 'string') {
+				returnValue = new StringValue(returnValue)
+			} else if (typeof returnValue === 'number') {
+				returnValue = new NumberValue(returnValue)
+			} else if (returnValue === null) {
+				returnValue = NumberValue.null
+			} else {
+				// Handle other primitive types as needed
+				console.warn(
+					'Unhandled return type:',
+					typeof returnValue,
+					returnValue
+				) // Add a warning for unhandled types
+				returnValue = NumberValue.null // Default to null or handle appropriately
+			}
+		}
 
 		return res.success(
 			returnValue

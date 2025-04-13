@@ -5,6 +5,8 @@ import { Interpreter } from './Interpreter'
 import { RunTimeResult } from './Parser'
 import { SymbolTable } from './SymbolTable'
 import { ListValue, NumberValue, StringValue, Value } from './Values'
+const { stringify } = require('flatted')
+
 import * as fs from 'fs'
 const prompt = require('prompt-sync')()
 
@@ -57,7 +59,10 @@ class BaseFunction extends Value {
 	populateArgs(argNames: string[], args: Value[], execCtx: Context): void {
 		for (let i = 0; i < args.length; i++) {
 			const argName = argNames[i]
-			const argValue = args[i]
+			const argValue = args[i] || NumberValue.null
+			if (!argValue) {
+				console.log(`Error: Argument ${argName} is null or undefined`) // Debug log
+			}
 			argValue.setContext(execCtx)
 			execCtx.symbolTable?.set(argName, argValue)
 		}
@@ -186,7 +191,9 @@ export class BuiltInFunction extends BaseFunction {
 	}
 
 	public executePrint(execCtx: Context): RunTimeResult {
-		console.log(execCtx.symbolTable?.get('value').asString())
+		const value = execCtx.symbolTable?.get('value')
+		console.log(value.asString())
+
 		return new RunTimeResult().success(NumberValue.null)
 	}
 	public static executePrintArgNames: string[] = ['value']
@@ -353,8 +360,9 @@ export class BuiltInFunction extends BaseFunction {
 	}
 	public static executeConcatArgNames: string[] = ['listA', 'listB']
 
-	public executeLen(execCtx: Context): RunTimeResult {
+	public executeLength(execCtx: Context): RunTimeResult {
 		const list = execCtx.symbolTable?.get('list')
+		console.log(`Length function called with: ${list}`) // Debug log
 
 		if (!(list instanceof ListValue)) {
 			return new RunTimeResult().failure(
@@ -366,6 +374,7 @@ export class BuiltInFunction extends BaseFunction {
 				)
 			)
 		}
+		console.log(`Length of list: ${list.elements.length}`) // Debug log
 
 		return new RunTimeResult().success(
 			new NumberValue(list.elements.length)
@@ -432,7 +441,7 @@ BuiltInFunction.isFunction = new BuiltInFunction('is_function')
 BuiltInFunction.append = new BuiltInFunction('append')
 BuiltInFunction.pop = new BuiltInFunction('pop')
 BuiltInFunction.concat = new BuiltInFunction('extend')
-BuiltInFunction.length = new BuiltInFunction('len')
+BuiltInFunction.length = new BuiltInFunction('length')
 BuiltInFunction.run = new BuiltInFunction('run')
 
 BuiltInFunction.argNames['Print'] = BuiltInFunction.executePrintArgNames
@@ -449,7 +458,7 @@ BuiltInFunction.argNames['ListCheck'] = BuiltInFunction.executeIsListArgNames
 BuiltInFunction.argNames['FunctionCheck'] =
 	BuiltInFunction.executeIsFunctionArgNames
 BuiltInFunction.argNames['Append'] = BuiltInFunction.executeAppendArgNames
-BuiltInFunction.argNames['pop'] = BuiltInFunction.executePopArgNames
+BuiltInFunction.argNames['Pop'] = BuiltInFunction.executePopArgNames
 BuiltInFunction.argNames['Concat'] = BuiltInFunction.executeConcatArgNames
 BuiltInFunction.argNames['Length'] = BuiltInFunction.executeLenArgNames
 BuiltInFunction.argNames['Run'] = BuiltInFunction.executeRunArgNames
