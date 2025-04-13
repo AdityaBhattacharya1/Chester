@@ -6,13 +6,17 @@
 
 Chester is a hobbyist programming language designed for simplicity and experimentation. It's an interpreted language, meaning code is executed line by line, making it easy to debug and understand. This project is a playground for exploring language design concepts, interpreter implementation, and the joy of creating something from scratch.
 
+# Why tho?
+
+After completing a course on compiler designs on NPTEL, I wanted to get a bit hands on with how programming languages work. What better way to do that than to create one from scratch - at least an interpreted one.
+
 ## Features
 
 -   **Simple Syntax:** Chester aims for a clean and intuitive syntax, borrowing ideas from languages like Python and JavaScript.
 -   **Dynamic Typing:** Variable types are checked during runtime, offering flexibility and ease of use.
 -   **Basic Data Types:** Supports numbers, strings, and lists as fundamental data types.
 -   **Functions:** Define and call your own functions to create reusable code blocks.
--   **Built-in Functions:** Includes a set of built-in functions for common tasks like printing, input, and list manipulation.
+-   **Standard Library:** Includes a set of built-in functions for common tasks like printing, input, and list manipulation.
 -   **REPL (Read-Eval-Print Loop):** An interactive environment for experimenting with Chester code.
 
 ## Getting Started
@@ -38,19 +42,13 @@ Chester is a hobbyist programming language designed for simplicity and experimen
 
     ```bash
     git clone https://github.com/AdityaBhattacharya1/Chester
-    cd chester
+    cd Chester
     ```
 
 2.  **Install Dependencies:**
 
     ```bash
     npm install
-    ```
-
-3.  **Build the Project:**
-
-    ```bash
-    npm run build
     ```
 
 ### Running the REPL
@@ -60,6 +58,14 @@ To start the interactive REPL, use the following command:
 ```bash
 ts-node shell.ts
 ```
+
+Or run your own chester file by creating a `.ct` file and running:
+
+```bash
+run("test.ct")
+```
+
+inside the interactive REPL!
 
 ## Language Syntax
 
