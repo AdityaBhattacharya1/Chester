@@ -1,3 +1,7 @@
+=============================
+Chester Programming language
+=============================
+
 1. Basic Grammar Rules:
 
     Program: A series of statements (functions, variable assignments, expressions, etc.)
