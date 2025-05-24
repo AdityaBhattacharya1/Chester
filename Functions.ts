@@ -194,7 +194,7 @@ export class BuiltInFunction extends BaseFunction {
 		const value = execCtx.symbolTable?.get('value')
 		console.log(value.asString())
 
-		return new RunTimeResult().success(NumberValue.null)
+		return new RunTimeResult().success('')
 	}
 	public static executePrintArgNames: string[] = ['value']
 

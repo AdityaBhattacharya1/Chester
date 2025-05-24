@@ -152,20 +152,6 @@ while x < 100 then
 end
 ```
 
-```c
-// C: For-loop with custom step
-for (int j = 10; j > 0; j -= 2) {
-    process(j);
-}
-```
-
-```chester
-// Chester
-for j = 10 to 1 step -2 then
-    process(j)
-end
-```
-
 ---
 
 ## List Operations
@@ -272,7 +258,7 @@ int fact(int n) {
 
 ```chester
 // Chester
-func fact(n) ->
+func fact(n)
     if n <= 1 then
         1
     else
@@ -290,7 +276,7 @@ int fib(int n) {
 
 ```chester
 // Chester
-func fib(n) ->
+func fib(n)
     if n < 2 then
         n
     else
@@ -342,7 +328,7 @@ int sumSquares(int *arr, int n) {
 
 ```chester
 // Chester
-func sumSquares(arr, n) ->
+func sumSquares(arr, n)
     let total = 0
     for i = 0 to n-1 step 1 then
         if arr[i] > 0 then
@@ -351,4 +337,3 @@ func sumSquares(arr, n) ->
     end
     total
 ```
-

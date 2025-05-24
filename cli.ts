@@ -1,13 +1,21 @@
 import { run } from './index'
-const prompt = require('prompt-sync')()
+import fs from 'fs'
 
-while (true) {
-	let textInput = prompt('REPL > ')
-	let [result, error] = run('<stdin>', textInput)
+const filename = process.argv[2]
+
+if (!filename) {
+	console.log('Usage: node cli.js <filename>')
+	process.exit(1)
+}
+
+try {
+	const fileContent = fs.readFileSync(filename, 'utf8')
+	let [result, error] = run(filename, fileContent)
 
 	if (error) {
 		console.log(error.asString())
 	} else if (result !== null && result !== undefined) {
+		let shouldPrint = true
 		if (
 			result.constructor &&
 			result.constructor.name === 'ListValue' &&
@@ -22,8 +30,8 @@ while (true) {
 						(e.asString() === '' || e.asString() === '[]')
 					)
 			)
-			// Heuristic: if input is a single line and starts with '[', treat as list literal
-			if (textInput.trim().startsWith('[')) {
+			// Heuristic: if file content is a single line and starts with '[', treat as list literal
+			if (fileContent.trim().startsWith('[')) {
 				console.log(
 					'[' +
 						filtered
@@ -35,30 +43,43 @@ while (true) {
 							.join(', ') +
 						']'
 				)
+				shouldPrint = false
 			} else if (filtered.length > 0) {
 				const last = filtered[filtered.length - 1]
 				// If the last statement is a print statement, don't print its value again
-				const lines = textInput.trim().split(/\r?\n/).filter((l: string) => l.trim() !== '')
+				const lines = fileContent
+					.trim()
+					.split(/\r?\n/)
+					.filter((l) => l.trim() !== '')
 				const lastLine = lines[lines.length - 1].trim()
-				if (!/^print\s*\(/.test(lastLine)) {
+				if (/^print\s*\(/.test(lastLine)) {
+					shouldPrint = false
+				}
+				if (shouldPrint) {
 					if (last && typeof last.asString === 'function') {
 						console.log(last.asString())
 					} else {
 						console.log(last)
 					}
 				}
+				shouldPrint = false
 			}
-			// If filtered.length === 0, print nothing
 		} else if (
 			typeof result.asString === 'function' &&
 			result.asString() !== '' &&
 			result.asString() !== '[]'
 		) {
-			const lines = textInput.trim().split(/\r?\n/).filter((l: string) => l.trim() !== '')
+			// If the file is a single print statement, don't print again
+			const lines = fileContent
+				.trim()
+				.split(/\r?\n/)
+				.filter((l) => l.trim() !== '')
 			const lastLine = lines[lines.length - 1].trim()
 			if (!/^print\s*\(/.test(lastLine)) {
 				console.log(result.asString())
 			}
 		}
 	}
+} catch (err) {
+	console.log(`Error reading file: ${(err as Error).message}`)
 }

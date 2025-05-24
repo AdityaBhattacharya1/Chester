@@ -1,5 +1,5 @@
 # Iteration Settings
-MAX_ITERATIONS = 1
+MAX_ITERATIONS = 3
 
 # Paths
 C_EXECUTABLE_PATH = "./temp_c.out"
