@@ -2,39 +2,58 @@ from pydantic import BaseModel
 from executor import compile_c_code, execute_binary, execute_chester_code
 from config import MAX_ITERATIONS
 from langchain.prompts import PromptTemplate
-from translator_agent import get_relevant_examples, llm
+from translator_agent import get_relevant_examples
+from llms import get_llms
 from langchain.output_parsers import PydanticOutputParser
+import threading
+from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
+import re
+
+
+def compute_exact_match(pred: str, ref: str) -> float:
+    return float(pred.strip() == ref.strip())
+
+
+def compute_bleu(pred: str, ref: str) -> float:
+    smoothie = SmoothingFunction().method4
+    pred_tokens = pred.strip().split()
+    ref_tokens = [ref.strip().split()]
+    return sentence_bleu(ref_tokens, pred_tokens, smoothing_function=smoothie)
+
+
+def compute_hallucination_index(pred: str, ref: str) -> float:
+    # Simple heuristic: count lines in pred not present in ref
+    pred_lines = set([l.strip() for l in pred.strip().splitlines() if l.strip()])
+    ref_lines = set([l.strip() for l in ref.strip().splitlines() if l.strip()])
+    hallucinated = pred_lines - ref_lines
+    if not pred_lines:
+        return 0.0
+    return len(hallucinated) / len(pred_lines)
 
 
 class ChesterOutput(BaseModel):
     code: str
 
 
-def translate_c_to_chester(c_code: str, max_iterations: int = MAX_ITERATIONS) -> str:
-    # Compile and get reference output from C code
-    try:
-        c_exec = compile_c_code(c_code)
-        reference_output = execute_binary(c_exec)
-        print(f"Reference C output: {reference_output}")
-    except Exception as e:
-        print(f"C execution failed: {e}")
-        return ""
-
+def llm_benchmark_worker(
+    llm_name, llm, c_code, reference_output, max_iterations, results
+):
     parser = PydanticOutputParser(pydantic_object=ChesterOutput)
     feedback_history = []
     best_attempt = None
-
+    success = False
+    best_metrics = {
+        "exact_match": 0.0,
+        "bleu": 0.0,
+        "hallucination": 1.0,
+        "output": "",
+    }
     for iteration in range(1, max_iterations + 1):
-        print(f"\n=== Iteration {iteration}/{max_iterations} ===")
-
-        # Get relevant examples and documentation
+        print(f"\n--- {llm_name} Iteration {iteration}/{max_iterations} ---")
         relevant_docs = get_relevant_examples(c_code)
-
-        # Build knowledge components
         chester_grammar = ""
         c_grammar = ""
         parallel_examples = ""
-
         for doc in relevant_docs:
             content = doc.page_content.lower()
             if "chester" in content and "grammar" in content:
@@ -43,9 +62,7 @@ def translate_c_to_chester(c_code: str, max_iterations: int = MAX_ITERATIONS) ->
                 c_grammar += doc.page_content + "\n\n"
             elif "parallel" in content or ("c:" in content and "chester:" in content):
                 parallel_examples += doc.page_content + "\n\n"
-
-        # Build prompt with feedback history
-        feedback_context = "\n".join(feedback_history[-3:])  # Keep last 3 attempts
+        feedback_context = "\n".join(feedback_history[-3:])
         prompt = PromptTemplate(
             input_variables=[
                 "chester_grammar",
@@ -87,32 +104,39 @@ def translate_c_to_chester(c_code: str, max_iterations: int = MAX_ITERATIONS) ->
                 "reference_output": reference_output,
             },
         )
-
-        # Generate Chester code
         chain = prompt | llm.with_structured_output(ChesterOutput)
-        result = chain.invoke(
-            {
-                "chester_grammar": chester_grammar,
-                "c_grammar": c_grammar,
-                "parallel_examples": parallel_examples,
-                "c_code": c_code,
-                "feedback_context": feedback_context,
-            }
-        )
-
+        try:
+            result = chain.invoke(
+                {
+                    "chester_grammar": chester_grammar,
+                    "c_grammar": c_grammar,
+                    "parallel_examples": parallel_examples,
+                    "c_code": c_code,
+                    "feedback_context": feedback_context,
+                }
+            )
+        except Exception as e:
+            print(f"Error during LLM invocation")
+            continue
         chester_code = result.code
         print(f"Generated Chester code:\n{chester_code}")
-
-        # Execute and compare outputs
         try:
             chester_output = execute_chester_code(chester_code)
             print(f"Chester output: {chester_output}")
-
+            exact = compute_exact_match(chester_output, reference_output)
+            bleu = compute_bleu(chester_output, reference_output)
+            halluc = compute_hallucination_index(chester_output, reference_output)
+            if bleu > best_metrics["bleu"]:
+                best_metrics["bleu"] = bleu
+            if exact > best_metrics["exact_match"]:
+                best_metrics["exact_match"] = exact
+            if halluc < best_metrics["hallucination"]:
+                best_metrics["hallucination"] = halluc
+            best_metrics["output"] = chester_output
             if chester_output == reference_output:
-                print("✅ Success! Outputs match!")
-                return chester_code
-
-            # Store feedback for next iteration
+                results.append((llm_name, iteration, True, exact, bleu, halluc))
+                success = True
+                break
             feedback = (
                 f"Attempt {iteration}:\n"
                 f"Generated code:\n{chester_code}\n"
@@ -121,11 +145,8 @@ def translate_c_to_chester(c_code: str, max_iterations: int = MAX_ITERATIONS) ->
                 f"Issue: Output mismatch"
             )
             feedback_history.append(feedback)
-
-            # Track best attempt (closest match)
             if not best_attempt or len(chester_output) > len(best_attempt[1]):
                 best_attempt = (chester_code, chester_output)
-
         except Exception as e:
             print(f"🚨 Execution error: {str(e)}")
             feedback = (
@@ -134,28 +155,53 @@ def translate_c_to_chester(c_code: str, max_iterations: int = MAX_ITERATIONS) ->
                 f"Error: {str(e)}"
             )
             feedback_history.append(feedback)
+    if not success:
+        print(f"❌ {llm_name} did not succeed in {max_iterations} iterations.")
+        if best_attempt:
+            print(f"Best attempt output: {best_attempt[1]}")
+        results.append(
+            (
+                llm_name,
+                max_iterations,
+                False,
+                best_metrics["exact_match"],
+                best_metrics["bleu"],
+                best_metrics["hallucination"],
+            )
+        )
 
-    # After all iterations
-    if best_attempt:
-        print("\n⚠️ Best attempt results:")
-        print(f"Code:\n{best_attempt[0]}")
-        print(f"Output: {best_attempt[1]}")
-        print(f"Expected: {reference_output}")
 
-    return best_attempt[0] if best_attempt else ""
+def benchmark_llms_on_translation(c_code: str, max_iterations: int = MAX_ITERATIONS):
+    try:
+        c_exec = compile_c_code(c_code)
+        reference_output = execute_binary(c_exec)
+        print(f"Reference C output: {reference_output}")
+    except Exception as e:
+        print(f"C execution failed: {e}")
+        return
 
+    llms = get_llms()
+    results = []
+    threads = []
 
-translate_c_to_chester(
-    """
-        #include <stdio.h>
+    for llm_name, llm in llms:
+        t = threading.Thread(
+            target=llm_benchmark_worker,
+            args=(llm_name, llm, c_code, reference_output, max_iterations, results),
+        )
+        t.start()
+        threads.append(t)
 
-        int main() {
-            printf("Hello, Chester!\\n");
-            int a = 5;
-            int b = 10;
-            int sum = a + b;
-            printf("%d\\n", sum);
-            return 0;
-        }
-    """
-)
+    for t in threads:
+        t.join()
+
+    print("\n=== Benchmark Results ===")
+    print(
+        f"{'LLM':<20} | {'Iterations':<10} | {'Success':<7} | {'ExactMatch':<10} | {'BLEU':<8} | {'Halluc.':<9}"
+    )
+    print("-" * 80)
+    for llm_name, iterations, success, exact, bleu, halluc in results:
+        print(
+            f"{llm_name:<20} | {iterations:<10} | {str(success):<7} | {exact:<10.2f} | {bleu:<8.2f} | {halluc:<9.2f}"
+        )
+    print("\n")

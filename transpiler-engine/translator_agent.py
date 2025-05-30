@@ -4,7 +4,6 @@ import os
 from langchain_openai.embeddings.azure import AzureOpenAIEmbeddings
 from langchain_community.vectorstores import PGVector
 from langchain_community.document_loaders import TextLoader, DirectoryLoader
-from langchain_openai.chat_models.azure import AzureChatOpenAI
 
 from dotenv import load_dotenv, find_dotenv
 
@@ -40,13 +39,6 @@ def build_vectorstore() -> PGVector:
 
 
 vectorstore = build_vectorstore()
-
-llm = AzureChatOpenAI(
-    azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT", ""),
-    api_key=os.getenv("AZURE_OPENAI_API_KEY", ""),
-    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT", ""),
-    api_version="2024-08-01-preview",
-)
 
 
 def get_relevant_examples(c_code: str):
