@@ -119,8 +119,8 @@ Finally, for running the benchmarks follow the given steps:
 
     By default a simple hello world and addition code is run for tester. However, feel free to change the code to be as complicated or as simple as you want.
 
-    > [!NOTE]  
-    > The benchmark runs under the assumption that the C code provided is valid and functional. In case erroneous code is provided, the benchmark's accuracy will be affected.
+> [!NOTE]  
+> The benchmark runs under the assumption that the C code provided is valid and functional. In case erroneous code is provided, the benchmark's accuracy will be affected.
 
 ## Language Syntax
 
