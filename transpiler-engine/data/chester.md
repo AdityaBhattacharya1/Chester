@@ -6,7 +6,7 @@ Chester Programming language
 
     Program: A series of statements (functions, variable assignments, expressions, etc.)
 
-program     ::= statement+
+program ::= statement+
 
 Statements: Can be a variety of constructs: variable assignments, function definitions, loops, conditionals, or expressions.
 
@@ -29,56 +29,61 @@ expression  ::= arithmetic_expression
             |  atom
 ```
 
-- **Arithmetic Expressions**:
-  ```
-  arithmetic_expression ::= expression ( '+' | '-' | '*' | '/' | '^' ) expression
-  ```
+-   **Arithmetic Expressions**:
 
-- **Comparison Expressions**:
-  ```
-  comparison_expression ::= expression ( '==' | '!=' | '<' | '>' | '<=' | '>=' ) expression
-  ```
+    ```
+    arithmetic_expression ::= expression ( '+' | '-' | '*' | '/' | '^' ) expression
+    ```
 
-- **Logical Expressions**:
-  ```
-  logical_expression ::= expression ( 'and' | 'or' ) expression
-  ```
+-   **Comparison Expressions**:
 
-- **Atom**: An atom can be a number, string, variable, list, or a grouped expression.
-  ```
-  atom        ::= number
-              |  string
-              |  identifier
-              |  '(' expression ')'
-              |  list_expression
-              |  function_call
-  ```
+    ```
+    comparison_expression ::= expression ( '==' | '!=' | '<' | '>' | '<=' | '>=' ) expression
+    ```
 
-- **Function Calls**:
-  ```
-  function_call ::= identifier '(' arguments ')'
-  arguments     ::= expression (',' expression)*
-  ```
+-   **Logical Expressions**:
+
+    ```
+    logical_expression ::= expression ( 'and' | 'or' ) expression
+    ```
+
+-   **Atom**: An atom can be a number, string, variable, list, or a grouped expression.
+
+    ```
+    atom        ::= number
+                |  string
+                |  identifier
+                |  '(' expression ')'
+                |  list_expression
+                |  function_call
+    ```
+
+-   **Function Calls**:
+
+    ```
+    function_call ::= identifier '(' arguments ')'
+    arguments     ::= expression (',' expression)*
+    ```
 
     Variable Assignment:
 
-var_assign   ::= 'let' identifier '=' expression
+var_assign ::= 'let' identifier '=' expression
 
 Lists:
 
 list_expression ::= '[' elements ']'
-elements         ::= expression (',' expression)*
+elements ::= expression (',' expression)\*
 
 Function Definitions:
 
 function_definition ::= 'func' identifier '(' arg_list ')' '->' expression
-arg_list             ::= identifier (',' identifier)*
+arg_list ::= identifier (',' identifier)\*
 
 Control Flow:
 
     If-Else Statements:
 
-conditional ::= 'if' expression 'then' statements ('elif' expression 'then' statements)* 'else' statements 'end'
+conditional ::= 'if' expression 'then' statements ('elif' expression 'then' statements)\* 'else' statements 'end'
 
 Loops:
 
@@ -90,13 +95,27 @@ Loops:
 You have a set of built-in functions like print, input, length, etc. The syntax for invoking them is consistent with function calls:
 
 ```
-function_call ::= 'print' '(' expression ')'
-              | 'input' '(' ')'
-              | 'inputInt' '(' ')'
-              | 'length' '(' expression ')'
-              | 'run' '(' string ')'
+function_call   ::= 'print'        '(' expression ')'
+                  | 'printReturn'  '(' expression ')'
+                  | 'input'        '(' ')'
+                  | 'inputInt'     '(' ')'
+                  | 'clear'        '(' ')'
+                  | 'cls'          '(' ')'             // alias of clear
+                  | 'isNum'        '(' expression ')'
+                  | 'isStr'        '(' expression ')'
+                  | 'isList'       '(' expression ')'
+                  | 'isFunc'       '(' expression ')'
+                  | 'append'       '(' expression ',' expression ')'
+                  | 'pop'          '(' expression ')'
+                  | 'concat'       '(' expression ',' expression ')'
+                  | 'length'       '(' expression ')'
+                  | 'run'          '(' string ')'
+
 ```
 
+Identifiers (e.g., variable names, function names, or built-ins) and literals (numbers, strings, lists) all qualify as valid atoms elsewhere in the grammar.
+
+Any call to one of the above built-ins must match its exact name (case-sensitive) and arity. Invoking a built in with the wrong number of arguments triggers a "RuntimeError: ArgumentMismatch".
 
 Error-Prone Areas and Potential Bugs:
 
