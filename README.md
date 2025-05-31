@@ -60,7 +60,7 @@ As for the transpilation and benchmarking, since the programming language is Tur
 3.  **For transpilation engine:**
 
     ```bash
-    cd transpilation-engine
+    cd transpiler-engine
     pip install -r requirements.txt
     ```
 
