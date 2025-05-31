@@ -29,7 +29,6 @@ As for the transpilation and benchmarking, since the programming language is Tur
 
 -   **Node.js:** Chester is implemented in TypeScript and requires Node.js to run. Download and install it from [https://nodejs.org/](https://nodejs.org/).
 -   **TypeScript:** You'll need the TypeScript compiler to build the project. Install it globally using npm:
--   **Python:** The transpilation engine is coded in Python so you'll need that too.
 
     ```bash
     npm install -g typescript
@@ -40,6 +39,8 @@ As for the transpilation and benchmarking, since the programming language is Tur
     ```bash
     npm install -g ts-node
     ```
+
+-   **Python:** The transpilation engine is coded in Python so you'll need that too.
 
 ### Installation
 
