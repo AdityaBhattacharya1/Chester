@@ -1,13 +1,87 @@
 from pydantic import BaseModel
 from executor import compile_c_code, execute_binary, execute_chester_code
-from config import MAX_ITERATIONS
+from config import MAX_ITERATIONS, TIMEOUT
 from langchain.prompts import PromptTemplate
 from translator_agent import get_relevant_examples
 from llms import get_llms
-from langchain.output_parsers import PydanticOutputParser
+from langchain.output_parsers import PydanticOutputParser, OutputFixingParser
+from langchain.output_parsers.regex import RegexParser
 import threading
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
+import time
 import re
+
+
+def extract_code_from_text(text: str) -> str:
+    """Extract code from raw text using various patterns."""
+    # Try to find code blocks with backticks
+    code_block_pattern = r"```(?:chester)?\n(.*?)```"
+    if match := re.search(code_block_pattern, text, re.DOTALL):
+        return match.group(1).strip()
+
+    # Try to find indented code blocks
+    lines = text.split("\n")
+    code_lines = []
+    in_code_block = False
+    for line in lines:
+        if line.strip().startswith("```"):
+            in_code_block = not in_code_block
+            continue
+        if in_code_block or line.startswith("    ") or line.startswith("\t"):
+            code_lines.append(line.strip())
+    if code_lines:
+        return "\n".join(code_lines)
+
+    # If no code blocks found, try to extract any code-like content
+    # Remove common prefixes/headers
+    text = re.sub(
+        r"^(Here'?s? (the )?(translated|corrected|Chester) code:?)",
+        "",
+        text,
+        flags=re.IGNORECASE | re.MULTILINE,
+    )
+    # If the remaining text looks like code (contains common Chester keywords/operations)
+    if re.search(r"(let|print|while|for|if|func)\s+\w+", text):
+        return text.strip()
+
+    return text.strip()
+
+
+class ChesterOutput(BaseModel):
+    code: str
+
+
+class FlexibleOutputParser:
+    """A flexible parser that tries multiple strategies to extract valid Chester code."""
+
+    def __init__(self):
+        self.pydantic_parser = PydanticOutputParser(pydantic_object=ChesterOutput)
+        self.regex_parser = RegexParser(
+            regex=r"(.*?)", output_keys=["code"], default_output_key="code"
+        )
+
+    def parse(self, text: str) -> ChesterOutput:
+        """Parse text into ChesterOutput using multiple strategies."""
+        # First try structured parsing
+        try:
+            return self.pydantic_parser.parse(text)
+        except Exception:
+            pass
+
+        # Try regex parsing
+        try:
+            regex_result = self.regex_parser.parse(text)
+            if isinstance(regex_result, dict) and "code" in regex_result:
+                return ChesterOutput(code=regex_result["code"])
+        except Exception:
+            pass
+
+        # Fall back to raw text extraction
+        extracted_code = extract_code_from_text(text)
+        if not extracted_code:
+            raise ValueError("Could not parse valid Chester code from output")
+
+        return ChesterOutput(code=extracted_code)
 
 
 def compute_exact_match(pred: str, ref: str) -> float:
@@ -31,14 +105,10 @@ def compute_hallucination_index(pred: str, ref: str) -> float:
     return len(hallucinated) / len(pred_lines)
 
 
-class ChesterOutput(BaseModel):
-    code: str
-
-
 def llm_benchmark_worker(
     llm_name, llm, c_code, reference_output, max_iterations, results
 ):
-    parser = PydanticOutputParser(pydantic_object=ChesterOutput)
+    parser = FlexibleOutputParser()
     feedback_history = []
     best_attempt = None
     success = False
@@ -100,13 +170,13 @@ def llm_benchmark_worker(
                 Output ONLY the corrected Chester code:
             """,
             partial_variables={
-                "format_instructions": parser.get_format_instructions(),
+                "format_instructions": parser.pydantic_parser.get_format_instructions(),
                 "reference_output": reference_output,
             },
         )
-        chain = prompt | llm.with_structured_output(ChesterOutput)
+        chain = prompt | llm
         try:
-            result = chain.invoke(
+            raw_result = chain.invoke(
                 {
                     "chester_grammar": chester_grammar,
                     "c_grammar": c_grammar,
@@ -115,12 +185,21 @@ def llm_benchmark_worker(
                     "feedback_context": feedback_context,
                 }
             )
+            # Use flexible parser to handle different output formats
+            try:
+                if not type(raw_result) == str:
+                    raw_result = raw_result.content
+                result = parser.parse(raw_result)
+            except Exception as parse_error:
+                print(f"Failed to parse LLM output: {parse_error}")
+                continue
         except Exception as e:
-            print(f"Error during LLM invocation")
+            print(f"Error during LLM invocation: {str(e)}")
             continue
+
         chester_code = result.code
-        print(f"Generated Chester code:\n{chester_code}")
         try:
+            print(f"Generated Chester code:\n{chester_code}")
             chester_output = execute_chester_code(chester_code)
             print(f"Chester output: {chester_output}")
             exact = compute_exact_match(chester_output, reference_output)
@@ -183,25 +262,52 @@ def benchmark_llms_on_translation(c_code: str, max_iterations: int = MAX_ITERATI
     llms = get_llms()
     results = []
     threads = []
+    thread_results = {}
+
+    def thread_wrapper(
+        llm_name, llm, c_code, reference_output, max_iterations, results, thread_results
+    ):
+        start_time = time.time()
+        llm_benchmark_worker(
+            llm_name, llm, c_code, reference_output, max_iterations, results
+        )
+        thread_results[llm_name] = time.time() - start_time
 
     for llm_name, llm in llms:
         t = threading.Thread(
-            target=llm_benchmark_worker,
-            args=(llm_name, llm, c_code, reference_output, max_iterations, results),
+            target=thread_wrapper,
+            args=(
+                llm_name,
+                llm,
+                c_code,
+                reference_output,
+                max_iterations,
+                results,
+                thread_results,
+            ),
         )
         t.start()
-        threads.append(t)
+        threads.append((llm_name, t))
 
-    for t in threads:
-        t.join()
+    for llm_name, t in threads:
+        t.join(timeout=TIMEOUT)
+        if t.is_alive():
+            print(
+                f"⏰ Timeout: {llm_name} exceeded {TIMEOUT}s and will be marked as failed."
+            )
+            results.append((llm_name, "-", False, 0.0, 0.0, 1.0))
+            # Optionally, try to kill the thread (not trivial in Python)
 
     print("\n=== Benchmark Results ===")
     print(
-        f"{'LLM':<20} | {'Iterations':<10} | {'Success':<7} | {'ExactMatch':<10} | {'BLEU':<8} | {'Halluc.':<9}"
+        f"{'LLM':<20} | {'Iterations':<10} | {'Success':<7} | {'ExactMatch':<10} | {'BLEU':<8} | {'Halluc.':<9} | {'Time(s)':<8}"
     )
-    print("-" * 80)
+    print("-" * 90)
     for llm_name, iterations, success, exact, bleu, halluc in results:
+        elapsed = thread_results.get(llm_name, "-")
+        if isinstance(elapsed, float):
+            elapsed = f"{elapsed:.2f}"
         print(
-            f"{llm_name:<20} | {iterations:<10} | {str(success):<7} | {exact:<10.2f} | {bleu:<8.2f} | {halluc:<9.2f}"
+            f"{llm_name:<20} | {iterations:<10} | {str(success):<7} | {exact:<10.2f} | {bleu:<8.2f} | {halluc:<9.2f} | {elapsed:<8}"
         )
     print("\n")

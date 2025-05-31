@@ -1,14 +1,16 @@
-<img src="./assets/hero.png" />
+<img src="./assets/hero.svg" />
 
 <br />
 
-# Chester: A Simple Programming Language
+# Chester: A Dual-Core LLM Benchmarking Suite
 
-Chester is a hobbyist programming language designed for simplicity and experimentation. It's an interpreted language, meaning code is executed line by line, making it easy to debug and understand. This project is a playground for exploring language design concepts, interpreter implementation, and the joy of creating something from scratch.
+Chester is a hobbyist programming language based LLM Benchmarking tool designed for simplicity and experimentation. It consists of an interpreted language and a RAG-based transpilation engine which converts C code into Chester code, compares the outputs for N iterations and benchmarks each model's capabilities against the total number of iterations each one required.
 
 # Why tho?
 
-After completing a course on compiler designs on NPTEL, I wanted to get a bit hands on with how programming languages work. What better way to do that than to create one from scratch - at least an interpreted one.
+For the programming language aspect, after completing a course on compiler designs on NPTEL, I wanted to get a bit hands on with how programming languages work. What better way to do that than to create one from scratch - at least an interpreted one.
+
+As for the transpilation and benchmarking, since the programming language is Turing complete but still not stable enough for most programming paradigms I wanted to test the limits of AI creativity in generating various alternatives on the basis of a pre-defined set of grammar.
 
 ## Features
 
@@ -18,6 +20,8 @@ After completing a course on compiler designs on NPTEL, I wanted to get a bit ha
 -   **Functions:** Define and call your own functions to create reusable code blocks.
 -   **Standard Library:** Includes a set of built-in functions for common tasks like printing, input, and list manipulation.
 -   **REPL (Read-Eval-Print Loop):** An interactive environment for experimenting with Chester code.
+-   **CLI (Command Line Interface) Based:** A CLI based tool helps run any file you have on the fly.
+-   **Transpilation Engine:** A RAG-based transpilation engine for testing the creative capabilities of various models.
 
 ## Getting Started
 
@@ -25,6 +29,7 @@ After completing a course on compiler designs on NPTEL, I wanted to get a bit ha
 
 -   **Node.js:** Chester is implemented in TypeScript and requires Node.js to run. Download and install it from [https://nodejs.org/](https://nodejs.org/).
 -   **TypeScript:** You'll need the TypeScript compiler to build the project. Install it globally using npm:
+-   **Python:** The transpilation engine is coded in Python so you'll need that too.
 
     ```bash
     npm install -g typescript
@@ -51,6 +56,13 @@ After completing a course on compiler designs on NPTEL, I wanted to get a bit ha
     npm install
     ```
 
+3.  **For transpilation engine:**
+
+    ```bash
+    cd transpilation-engine
+    pip install -r requirements.txt
+    ```
+
 ### Running the REPL
 
 To start the interactive REPL, use the following command:
@@ -66,6 +78,48 @@ run("test.ct")
 ```
 
 inside the interactive REPL!
+
+### Using the CLI
+
+In order to use the CLI instead, use the following command:
+
+```bash
+ts-node cli.ts <FILENAME>.ct
+```
+
+### Benchmarking
+
+Finally, for running the benchmarks follow the given steps:
+
+1. First set the environment variables inside `.env`
+
+    ```bash
+    cp .env.example .env
+    ```
+
+2. By default, the following model providers are being tested:
+
+-   Azure OpenAI
+-   OpenAI
+-   Gemini
+-   DeepSeek V3 Base
+-   Deepseek R1 0528 Qwen3 8B
+-   Sarvam AI: Sarvam-M
+-   Google: Gemma 3n 4B
+-   Meta: Llama 3.3 8B Instruct
+-   Microsoft: Phi 4 Reasoning Plus
+-   THUDM: GLM Z1 32B
+
+3. Run the benchmarks:
+
+    ```bash
+    python benchmark.py
+    ```
+
+    By default a simple hello world and addition code is run for tester. However, feel free to change the code to be as complicated or as simple as you want.
+
+    > [!NOTE]  
+    > The benchmark runs under the assumption that the C code provided is valid and functional. In case erroneous code is provided, the benchmark's accuracy will be affected.
 
 ## Language Syntax
 
@@ -192,11 +246,3 @@ Chester is an open-source project, and contributions are welcome! If you'd like 
 3.  Implement your changes.
 4.  Write tests to ensure your changes are working correctly.
 5.  Submit a pull request.
-
-## Future Enhancements
-
--   More data types (e.g., booleans, dictionaries).
--   Error handling and exception management.
--   More built-in functions.
--   A standard library.
--   Improved performance.

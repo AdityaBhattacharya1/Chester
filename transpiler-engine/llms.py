@@ -25,8 +25,44 @@ gemini = ChatGoogleGenerativeAI(
     google_api_key=os.getenv("GEMINI_API_KEY", ""),
 )
 
-deepseek = ChatOpenAI(
+deepseek_v3 = ChatOpenAI(
     model=os.getenv("DEEPSEEK_MODEL", "deepseek/deepseek-v3-base:free"),
+    openai_api_key=os.getenv("OPENROUTER_API_KEY", ""),
+    openai_api_base=os.getenv("OPENROUTER_BASE_URL", "https://api.openrouter.ai/v1/"),
+)
+
+deepseek_r1 = ChatOpenAI(
+    model=os.getenv("DEEPSEEK_MODEL", "deepseek/deepseek-r1-0528-qwen3-8b:free"),
+    openai_api_key=os.getenv("OPENROUTER_API_KEY", ""),
+    openai_api_base=os.getenv("OPENROUTER_BASE_URL", "https://api.openrouter.ai/v1/"),
+)
+
+sarvam = ChatOpenAI(
+    model=os.getenv("SARVAM_MODEL", "sarvamai/sarvam-m:free"),
+    openai_api_key=os.getenv("OPENROUTER_API_KEY", ""),
+    openai_api_base=os.getenv("OPENROUTER_BASE_URL", "https://api.openrouter.ai/v1/"),
+)
+
+gemma = ChatOpenAI(
+    model=os.getenv("GEMMA_MODEL", "google/gemma-3n-e4b-it:free"),
+    openai_api_key=os.getenv("OPENROUTER_API_KEY", ""),
+    openai_api_base=os.getenv("OPENROUTER_BASE_URL", "https://api.openrouter.ai/v1/"),
+)
+
+meta_instruct = ChatOpenAI(
+    model=os.getenv("META_INSTRUCT_MODEL", "meta-llama/llama-3.3-8b-instruct:free"),
+    openai_api_key=os.getenv("OPENROUTER_API_KEY", ""),
+    openai_api_base=os.getenv("OPENROUTER_BASE_URL", "https://api.openrouter.ai/v1/"),
+)
+
+microsoft_phi = ChatOpenAI(
+    model=os.getenv("MICROSOFT_PHI_MODEL", "microsoft/phi-4-reasoning-plus:free"),
+    openai_api_key=os.getenv("OPENROUTER_API_KEY", ""),
+    openai_api_base=os.getenv("OPENROUTER_BASE_URL", "https://api.openrouter.ai/v1/"),
+)
+
+thudm = ChatOpenAI(
+    model=os.getenv("THUDM_MODEL", "thudm/glm-z1-32b:free"),
     openai_api_key=os.getenv("OPENROUTER_API_KEY", ""),
     openai_api_base=os.getenv("OPENROUTER_BASE_URL", "https://api.openrouter.ai/v1/"),
 )
@@ -35,7 +71,13 @@ deepseek = ChatOpenAI(
 def get_llms():
     return [
         ("azure-openai", azure_openai),
-        # ("openai", openai),
+        ("openai", openai),
         ("gemini", gemini),
-        ("deepseek", deepseek),
+        ("deepseek-v3", deepseek_v3),
+        ("deepseek-r1", deepseek_r1),
+        ("sarvam", sarvam),
+        ("gemma", gemma),
+        ("meta-instruct", meta_instruct),
+        ("microsoft-phi", microsoft_phi),
+        ("thudm", thudm),
     ]
