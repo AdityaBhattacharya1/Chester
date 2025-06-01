@@ -122,6 +122,10 @@ Finally, for running the benchmarks follow the given steps:
 > [!NOTE]  
 > The benchmark runs under the assumption that the C code provided is valid and functional. In case erroneous code is provided, the benchmark's accuracy will be affected.
 
+## Flow of the Benchmark
+
+<img src="./assets/flowchart.svg">
+
 ## Language Syntax
 
 ### Variables
