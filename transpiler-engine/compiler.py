@@ -4,8 +4,7 @@ from config import MAX_ITERATIONS, TIMEOUT
 from langchain.prompts import PromptTemplate
 from translator_agent import get_relevant_examples
 from llms import get_llms
-from langchain.output_parsers import PydanticOutputParser, OutputFixingParser
-from langchain.output_parsers.regex import RegexParser
+from langchain.output_parsers import PydanticOutputParser
 import threading
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 import time
@@ -14,37 +13,41 @@ import re
 
 def extract_code_from_text(text: str) -> str:
     """Extract code from raw text using various patterns."""
-    # Try to find code blocks with backticks
-    code_block_pattern = r"```(?:chester)?\n(.*?)```"
-    if match := re.search(code_block_pattern, text, re.DOTALL):
-        return match.group(1).strip()
 
-    # Try to find indented code blocks
+    code_block_pattern = r"```(?:chester)?\s*\n(.*?)```"
+    match = re.search(code_block_pattern, text, re.DOTALL)
+    if match:
+        code = match.group(1).strip()
+        if code:
+            return code
+
     lines = text.split("\n")
     code_lines = []
     in_code_block = False
+
     for line in lines:
         if line.strip().startswith("```"):
             in_code_block = not in_code_block
             continue
-        if in_code_block or line.startswith("    ") or line.startswith("\t"):
-            code_lines.append(line.strip())
-    if code_lines:
-        return "\n".join(code_lines)
+        if in_code_block:
+            code_lines.append(line)
 
-    # If no code blocks found, try to extract any code-like content
-    # Remove common prefixes/headers
+    if code_lines:
+        code = "\n".join(code_lines).strip()
+        if code:
+            return code
+
     text = re.sub(
         r"^(Here'?s? (the )?(translated|corrected|Chester) code:?)",
         "",
         text,
         flags=re.IGNORECASE | re.MULTILINE,
-    )
-    # If the remaining text looks like code (contains common Chester keywords/operations)
-    if re.search(r"(let|print|while|for|if|func)\s+\w+", text):
-        return text.strip()
+    ).strip()
 
-    return text.strip()
+    if re.search(r"\b(let|print|while|for|if|func)\s", text):
+        return text
+
+    return text
 
 
 class ChesterOutput(BaseModel):
@@ -56,30 +59,19 @@ class FlexibleOutputParser:
 
     def __init__(self):
         self.pydantic_parser = PydanticOutputParser(pydantic_object=ChesterOutput)
-        self.regex_parser = RegexParser(
-            regex=r"(.*?)", output_keys=["code"], default_output_key="code"
-        )
 
     def parse(self, text: str) -> ChesterOutput:
         """Parse text into ChesterOutput using multiple strategies."""
-        # First try structured parsing
+
         try:
             return self.pydantic_parser.parse(text)
         except Exception:
             pass
 
-        # Try regex parsing
-        try:
-            regex_result = self.regex_parser.parse(text)
-            if isinstance(regex_result, dict) and "code" in regex_result:
-                return ChesterOutput(code=regex_result["code"])
-        except Exception:
-            pass
-
-        # Fall back to raw text extraction
         extracted_code = extract_code_from_text(text)
-        if not extracted_code:
-            raise ValueError("Could not parse valid Chester code from output")
+
+        if not extracted_code or extracted_code.isspace():
+            raise ValueError(f"Could not parse valid Chester code from output: {text}")
 
         return ChesterOutput(code=extracted_code)
 
@@ -96,7 +88,6 @@ def compute_bleu(pred: str, ref: str) -> float:
 
 
 def compute_hallucination_index(pred: str, ref: str) -> float:
-    # Simple heuristic: count lines in pred not present in ref
     pred_lines = set([l.strip() for l in pred.strip().splitlines() if l.strip()])
     ref_lines = set([l.strip() for l in ref.strip().splitlines() if l.strip()])
     hallucinated = pred_lines - ref_lines
@@ -185,13 +176,20 @@ def llm_benchmark_worker(
                     "feedback_context": feedback_context,
                 }
             )
-            # Use flexible parser to handle different output formats
+
+            print(f"LLM raw output for {llm_name}: {raw_result}")
+
+            if hasattr(raw_result, "content"):
+                content = raw_result.content
+            else:
+                content = str(raw_result)
+
             try:
-                if not type(raw_result) == str:
-                    raw_result = raw_result.content
-                result = parser.parse(raw_result)
+                result = parser.parse(content)
+                print(f"Parsed LLM output for {llm_name}: {result}")
             except Exception as parse_error:
                 print(f"Failed to parse LLM output: {parse_error}")
+                print(f"Raw content was: {content}")
                 continue
         except Exception as e:
             print(f"Error during LLM invocation: {str(e)}")
@@ -296,7 +294,6 @@ def benchmark_llms_on_translation(c_code: str, max_iterations: int = MAX_ITERATI
                 f"⏰ Timeout: {llm_name} exceeded {TIMEOUT}s and will be marked as failed."
             )
             results.append((llm_name, "-", False, 0.0, 0.0, 1.0))
-            # Optionally, try to kill the thread (not trivial in Python)
 
     print("\n=== Benchmark Results ===")
     print(
