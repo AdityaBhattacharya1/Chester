@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from executor import compile_c_code, execute_binary, execute_chester_code
 from config import MAX_ITERATIONS, TIMEOUT
 from langchain.prompts import PromptTemplate
-from translator_agent import get_relevant_examples
+from translator_agent import get_relevant_examples_sync
 from llms import get_llms
 from langchain.output_parsers import PydanticOutputParser
 import threading
@@ -111,7 +111,7 @@ def llm_benchmark_worker(
     }
     for iteration in range(1, max_iterations + 1):
         print(f"\n--- {llm_name} Iteration {iteration}/{max_iterations} ---")
-        relevant_docs = get_relevant_examples(c_code)
+        relevant_docs = get_relevant_examples_sync(c_code)
         chester_grammar = ""
         c_grammar = ""
         parallel_examples = ""
