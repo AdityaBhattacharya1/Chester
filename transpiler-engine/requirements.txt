@@ -51,7 +51,7 @@ multidict==6.4.4
 mypy_extensions==1.1.0
 numpy==2.2.6
 openai==1.74.0
-orjson==3.10.18
+orjson==3.11.6
 packaging==24.2
 pexpect==4.9.0
 pgvector==0.4.1
